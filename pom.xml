@@ -105,6 +105,13 @@
                     <version>${matsim.version}</version>
               </dependency>
 
+		<!-- Add again apache commons io to get FileInput -->
+		<dependency>
+			<groupId>commons-io</groupId>
+			<artifactId>commons-io</artifactId>
+			<version>2.6</version>
+		</dependency>
+
 	      <!--The following is here since there was an upstream-->
 	      <!--problem, and we did not want to wait until that was resolved.  The-->
 	      <!--comments below are related to that problem.  kai/ihab, dec'18-->

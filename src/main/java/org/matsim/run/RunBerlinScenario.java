@@ -19,11 +19,10 @@
 
 package org.matsim.run;
 
-import static org.matsim.core.config.groups.ControlerConfigGroup.RoutingAlgorithmType.FastAStarLandmarks;
-
-import java.util.Arrays;
-
+import ch.sbb.matsim.routing.pt.raptor.SwissRailRaptorModule;
 import org.apache.log4j.Logger;
+import org.matsim.analysis.RunAnalysis;
+import org.matsim.analysis.RunComparison;
 import org.matsim.api.core.v01.Scenario;
 import org.matsim.api.core.v01.TransportMode;
 import org.matsim.core.config.Config;
@@ -35,10 +34,12 @@ import org.matsim.core.controler.AbstractModule;
 import org.matsim.core.controler.Controler;
 import org.matsim.core.controler.OutputDirectoryLogging;
 import org.matsim.core.gbl.Gbl;
-import org.matsim.core.router.MainModeIdentifier;
 import org.matsim.core.scenario.ScenarioUtils;
 
-import ch.sbb.matsim.routing.pt.raptor.SwissRailRaptorModule;
+import java.io.IOException;
+import java.util.Arrays;
+
+import static org.matsim.core.config.groups.ControlerConfigGroup.RoutingAlgorithmType.FastAStarLandmarks;
 
 /**
 * @author ikaddoura
@@ -48,21 +49,39 @@ public final class RunBerlinScenario {
 
 	private static final Logger log = Logger.getLogger(RunBerlinScenario.class );
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws IOException {
 		
 		for (String arg : args) {
 			log.info( arg );
 		}
 		
 		if ( args.length==0 ) {
-			args = new String[] {"scenarios/berlin-v5.4-10pct/input/berlin-v5.4-10pct.config.xml"}  ;
+			// set 1pct or 10 pct
+			args = new String[] {"scenarios/berlin-v5.4-1pct/input/berlin-v5.4-1pct.config.xml"}  ;
 		}
 
-		Config config = prepareConfig( args ) ;
-		Scenario scenario = prepareScenario( config ) ;
-		Controler controler = prepareControler( scenario ) ;
-		controler.run() ;
+//		Config config = prepareConfig( args ) ;
+//		config.controler().setOverwriteFileSetting(OutputDirectoryHierarchy.OverwriteFileSetting.deleteDirectoryIfExists);
+//		Scenario scenario = prepareScenario( config ) ;
 
+//		NetworkMod networkMod = new NetworkMod();
+//		NetworkMod_2 networkMod = new NetworkMod_2();
+//		networkMod.modify(scenario);
+//
+//		config.network().setInputFile("scenarios/berlin-v5.4-1pct/input/berlin-v5.5-network-degesV2.xml.gz");
+//		config.plans().setInputFile("scenarios/berlin-v5.4-1pct/input/berlin-v5.5-plans-citizV2.xml.gz");
+
+//		Controler controler = prepareControler( scenario ) ;
+//		controler.run() ;
+
+		// Analysis section
+		RunAnalysis analysis = new RunAnalysis("base");
+		analysis.exampleCounts();
+		analysis.writeOut(analysis.getResidentDensity());
+
+		// Comparison section
+		RunComparison compare = new RunComparison("citiz", "deges");
+		compare.runTimeDistanceComparison();
 	}
 
 	public static Controler prepareControler( Scenario scenario ) {
@@ -92,8 +111,10 @@ public final class RunBerlinScenario {
 			public void install() {
 				addTravelTimeBinding( TransportMode.ride ).to( networkTravelTime() );
 				addTravelDisutilityFactoryBinding( TransportMode.ride ).to( carTravelDisutilityFactoryKey() );
+
 			}
 		} );
+
 
 		return controler;
 	}
@@ -118,7 +139,9 @@ public final class RunBerlinScenario {
 		final Config config = ConfigUtils.loadConfig( args[ 0 ] ); // I need this to set the context
 		
 		config.controler().setRoutingAlgorithmType( FastAStarLandmarks );
-		
+
+		//config of modeChoice
+
 		config.subtourModeChoice().setProbaForRandomSingleTripMode( 0.5 );
 		
 		config.plansCalcRoute().setRoutingRandomness( 3. );
@@ -146,6 +169,10 @@ public final class RunBerlinScenario {
 		config.planCalcScore().addActivityParams( new ActivityParams( "freight" ).setTypicalDuration( 12.*3600. ) );
 
 		ConfigUtils.applyCommandline( config, typedArgs ) ;
+
+		// set iterations
+		config.controler().setLastIteration(50);
+		config.controler().setOutputDirectory("./funkturm_base/output");
 
 		return config ;
 	}
