@@ -19,9 +19,9 @@ import java.util.Set;
 
 public class ImportNetworkExtract {
 
-    final static String csvNetworkPath = "C:/Users/djp/Documents/freizeitnetz-csv.csv";
+    final static String csvNetworkPath = "freizeitnetz-csv.csv";
     final static String existingNetworkPath = "";
-    final static String newNetworkPath = "C:/Users/djp/Documents/freizeitnetz-network.xml";
+    final static String newNetworkPath = "freizeitnetz-network.xml";
 
     public static void main(String[] args) throws IOException {
             Node fromNode, toNode;
