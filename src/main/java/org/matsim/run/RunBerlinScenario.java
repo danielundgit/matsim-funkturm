@@ -21,6 +21,8 @@ package org.matsim.run;
 
 import ch.sbb.matsim.routing.pt.raptor.SwissRailRaptorModule;
 import org.apache.log4j.Logger;
+import org.locationtech.jts.geom.Polygon;
+import org.matsim.analysis.GridCreator;
 import org.matsim.analysis.RunAnalysis;
 import org.matsim.analysis.RunComparison;
 import org.matsim.api.core.v01.Scenario;
@@ -32,12 +34,15 @@ import org.matsim.core.config.groups.QSimConfigGroup.TrafficDynamics;
 import org.matsim.core.config.groups.VspExperimentalConfigGroup;
 import org.matsim.core.controler.AbstractModule;
 import org.matsim.core.controler.Controler;
+import org.matsim.core.controler.OutputDirectoryHierarchy;
 import org.matsim.core.controler.OutputDirectoryLogging;
 import org.matsim.core.gbl.Gbl;
 import org.matsim.core.scenario.ScenarioUtils;
+import org.matsim.modify.NetworkMod;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Map;
 
 import static org.matsim.core.config.groups.ControlerConfigGroup.RoutingAlgorithmType.FastAStarLandmarks;
 
@@ -47,41 +52,108 @@ import static org.matsim.core.config.groups.ControlerConfigGroup.RoutingAlgorith
 
 public final class RunBerlinScenario {
 
+	// Cases to look at:
+	private static final String BASE = "base";
+	private static final String DEGES = "deges";
+	private static final String CITIZEN = "citiz";
+	private static final String INDEX = "_t2";
+
+	private static final String[] MODE = new String[]{BASE, DEGES, CITIZEN};
+	private static final boolean[] RUNSIM = new boolean[]{false, false, false};
+	private static final boolean[] RUNANALYSIS = new boolean[]{false, true, false};
+	private static final boolean[] RUNCOMPARE = new boolean[]{false, false, false};
+
+//	private static final String[] areaADF = new String[]{"115", "120", "122", "123", "130", "136", "138", "139", "140"};
+private static final String[] areaADF = new String[]{"194", "164", "191", "189", "488", "178", "177", "176"};
+//	private static final String[] areaADF = new String[]{"04200311", "04200207", "04400725", "04400726", "04500937", "04300415", "04300414", "04300413"};
+
 	private static final Logger log = Logger.getLogger(RunBerlinScenario.class );
 
 	public static void main(String[] args) throws IOException {
-		
-		for (String arg : args) {
-			log.info( arg );
+
+		for(int mode = 0; mode < MODE.length; mode++) {
+			if (RUNSIM[mode]) {
+				for (String arg : args) {
+					log.info(arg);
+				}
+
+				if (args.length == 0) {
+					// set 1pct or 10 pct
+					args = new String[]{"scenarios/berlin-v5.4-10pct/input/berlin-v5.4-10pct.config.xml"};
+				}
+
+				Config config = prepareConfig(args);
+				config.controler().setOverwriteFileSetting(OutputDirectoryHierarchy.OverwriteFileSetting.deleteDirectoryIfExists);
+				// set iterations
+				config.controler().setLastIteration(1);
+				config.controler().setOutputDirectory("./funkturm_" + MODE[mode] + INDEX + "/output");
+//				config.controler().setWriteEventsInterval(20);
+				Scenario scenario = prepareScenario(config);
+
+				if (MODE[mode] != BASE) {
+					new NetworkMod(MODE[mode]).modify(scenario);
+//					new NetworkMod_2().modify(scenario);
+
+
+//					uncommented to build plans file correctly for export
+//					for (Person pp : scenario.getPopulation().getPersons().values()) {
+//						for (Plan plan : pp.getPlans()) {
+//							PopulationUtils.resetRoutes(plan);
+//						}
+//					}
+//					new PopulationWriter(scenario.getPopulation()).write("berlin-v5.4-plans-"+ MODE[mode] +".xml.gz");
+					System.out.println("CHANGED PLANS!");
+					config.network().setInputFile("berlin-v5.4-network-" + MODE[mode] + ".xml.gz");
+					config.plans().setInputFile("berlin-v5.4-plans-"+ MODE[mode] +".xml.gz");
+//					scenario = prepareScenario(config);
+				}
+
+				Controler controler = prepareControler(scenario);
+//				new TimeAllocationMutatorReRoute().get();
+
+//				controler.run();
+			}
 		}
-		
-		if ( args.length==0 ) {
-			// set 1pct or 10 pct
-			args = new String[] {"scenarios/berlin-v5.4-1pct/input/berlin-v5.4-1pct.config.xml"}  ;
+
+		// prepare polygons (replacing LOR shp, having issues)
+		Map<Integer, Polygon> polyADF = new GridCreator().getPolyMap();
+
+		/** Analysis section */
+		for(int mode = 0; mode < MODE.length; mode++) {
+			if (RUNANALYSIS[mode]) {
+				RunAnalysis analysis = new RunAnalysis(MODE[mode] + INDEX, polyADF);
+				analysis.exampleCounts(true);
+//		analysis.writeOut(analysis.getResidentDensity());
+//		analysis.writeOut(analysis.doTrafficCounts());
+//				analysis.writeToFile(analysis.getResidentDensity(), "resident density");
+//				analysis.writeToFile(analysis.doTrafficCounts(), "traffic count");
+
+
+//				analysis.getADFpersons();
+				System.out.println("Hallo!");
+			}
 		}
 
-//		Config config = prepareConfig( args ) ;
-//		config.controler().setOverwriteFileSetting(OutputDirectoryHierarchy.OverwriteFileSetting.deleteDirectoryIfExists);
-//		Scenario scenario = prepareScenario( config ) ;
+		/** Comparison section */
+		for(int mode = 0; mode < MODE.length-1; mode++) {
+			if (RUNCOMPARE[mode]) {
+				if(RUNCOMPARE[mode+1]) {
+					RunComparison compare = new RunComparison(MODE[mode] + INDEX, MODE[mode+1] + INDEX);
+					compare.runTimeDistanceComparison();
+				}
+				if(RUNCOMPARE[MODE.length-1-mode]){
+					if(!MODE[MODE.length - 1 - mode].equals(MODE[mode])){
+						RunComparison compare = new RunComparison(MODE[mode] + INDEX, MODE[MODE.length-1-mode] + INDEX);
+						compare.runTimeDistanceComparison();
+					}
+					else{
+						break;
+					}
+				}
+			}
+		}
 
-//		NetworkMod networkMod = new NetworkMod();
-//		NetworkMod_2 networkMod = new NetworkMod_2();
-//		networkMod.modify(scenario);
-//
-//		config.network().setInputFile("scenarios/berlin-v5.4-1pct/input/berlin-v5.5-network-degesV2.xml.gz");
-//		config.plans().setInputFile("scenarios/berlin-v5.4-1pct/input/berlin-v5.5-plans-citizV2.xml.gz");
 
-//		Controler controler = prepareControler( scenario ) ;
-//		controler.run() ;
-
-		// Analysis section
-		RunAnalysis analysis = new RunAnalysis("base");
-		analysis.exampleCounts();
-		analysis.writeOut(analysis.getResidentDensity());
-
-		// Comparison section
-		RunComparison compare = new RunComparison("citiz", "deges");
-		compare.runTimeDistanceComparison();
 	}
 
 	public static Controler prepareControler( Scenario scenario ) {
@@ -169,10 +241,6 @@ public final class RunBerlinScenario {
 		config.planCalcScore().addActivityParams( new ActivityParams( "freight" ).setTypicalDuration( 12.*3600. ) );
 
 		ConfigUtils.applyCommandline( config, typedArgs ) ;
-
-		// set iterations
-		config.controler().setLastIteration(50);
-		config.controler().setOutputDirectory("./funkturm_base/output");
 
 		return config ;
 	}

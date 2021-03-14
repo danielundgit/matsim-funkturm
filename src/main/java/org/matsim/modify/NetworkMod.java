@@ -8,42 +8,42 @@ import org.matsim.api.core.v01.network.Link;
 import org.matsim.api.core.v01.network.Network;
 import org.matsim.api.core.v01.network.Node;
 import org.matsim.api.core.v01.population.*;
+import org.matsim.core.config.Config;
 import org.matsim.core.network.NetworkUtils;
 import org.matsim.core.network.io.MatsimNetworkReader;
 import org.matsim.core.network.io.NetworkWriter;
 import org.matsim.core.population.PopulationUtils;
 import org.matsim.core.population.io.PopulationReader;
-import org.matsim.core.population.io.PopulationWriter;
 import org.matsim.core.utils.collections.CollectionUtils;
 
 import java.awt.*;
 import java.io.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.List;
+import java.util.*;
 
 
 public class NetworkMod {
 
-    private String outputNetwork = "scenarios/berlin-v5.4-1pct/input/berlin-v5.5-network-degesV2.xml.gz";
-    private String outputPopulation = "scenarios/berlin-v5.4-1pct/input/berlin-v5.5-plans-degesV2.xml.gz";
+    private String outputNetwork = "scenarios/berlin-v5.4-1pct/input/berlin-v5.4-network-degesV2.xml.gz";
+    private String outputPopulation = "scenarios/berlin-v5.4-1pct/input/berlin-v5.4-plans-deges.xml.gz";
     private String inputLines = "C:/Users/djp/Documents/deges_lines-v3.csv";
     private String cleaningShape = "C:/Users/djp/Documents/cleaning-shape_2.shp";
-    private String csvOutputPath = System.getProperty("user.dir")+"/scenarios/berlin-v5.4-1pct/output/deges_added-NodesV2.csv";
+    private String csvOutputPath = System.getProperty("user.dir")+"/scenarios/berlin-v5.4-1pct/output/deges_added-Nodes.csv";
 //    private String outputNetwork;
 //    private String inputLines;
 //    private String cleaningShape;
 //    private String csvOutputPath = System.getProperty("user.dir")+"/scenarios/berlin-v5.4-1pct/output/citiz_added-NodesV2.csv";
     private String changeId = "deges";
+
     Map<Coord, Node> nodeMap = new HashMap<>();
 
     public NetworkMod(String analysisCase){
         this.changeId = analysisCase;
-        this.outputNetwork = "scenarios/"+analysisCase+"/input/berlin-v5.5-network-citizV2.xml.gz";
-        this.inputLines = "scenarios/"+analysisCase+"/input/citiz_lines-v3.csv";
-        this.cleaningShape = "scenarios/"+analysisCase+"/input/cleaning-shape_2.shp";
-        this.csvOutputPath = System.getProperty("user.dir")+"/scenarios/"+analysisCase+"/additionalOutput/citiz_added-NodesV2.csv";
+        this.outputNetwork = "scenarios/berlin-v5.4-1pct/input/berlin-v5.4-network-"+analysisCase+".xml.gz";
+        this.inputLines = "C:/Users/djp/Documents/"+analysisCase+"_lines-v3.csv";
+        this.cleaningShape = "C:/Users/djp/Documents/"+analysisCase+"/input/cleaning-shape_2.shp";
+        this.csvOutputPath = System.getProperty("user.dir")+"/scenarios/berlin-v5.4-1pct/modOutput/"+analysisCase+"_added-Nodes.csv";
+        this.outputPopulation = "scenarios/berlin-v5.4-1pct/input/berlin-v5.4-plans-"+analysisCase+".xml.gz";
     }
     public NetworkMod(){
 
@@ -97,18 +97,39 @@ public class NetworkMod {
 //                network.getNodes().remove(toNode);
 //            }
 //        }
-        System.out.println("\nDeges nodes/links:");
+        System.out.println("\n"+changeId+" nodes/links:");
         importNetworkElements(inputLines, outNetwork, nodeMap);
         reorderNetworkElements(outNetwork);
         printoutCsv(nodeMap, csvOutputPath);
 
-//        adaptRoutes(scenario, network);
+//        adaptRoutes(scenario, network, outNetwork);
+//        adaptActivities(scenario, outNetwork);
+
+        new NetworkWriter(outNetwork).write(this.outputNetwork);
+
+        for (Person pp : scenario.getPopulation().getPersons().values()) {
+            for (Plan plan : pp.getPlans()) {
+                PopulationUtils.resetRoutes(plan);
+            }
+        }
+        new PopulationWriter(scenario.getPopulation()).write(outputPopulation);
+
+//        for(Person pp: scenario.getPopulation().getPersons().values()) {
+//            for (Plan plan : pp.getPlans()) {
+//                PopulationUtils.resetRoutes(plan);
+//            }
+//        }
+
+//        new PopulationWriter(scenario.getPopulation()).write(scenario.getConfig().plans().getInputFile());
+        System.out.println("DONE!");
+
+
 //        NetworkSimplifier networkSimplifier = new NetworkSimplifier();
 //        networkSimplifier.run(network);
-        new NetworkWriter(outNetwork).write(this.outputNetwork);
+//        new NetworkWriter(outNetwork).write(this.outputNetwork);
     }
 
-    private void excludeNetworkElements(Network network, Network outNetwork) {
+    private void excludeNetworkElements(Network network, Network newNetwork) {
         ArrayList<Id<Link>> links_delete = new ArrayList<>();
 
         for(Link ll: network.getLinks().values()){
@@ -121,32 +142,42 @@ public class NetworkMod {
         }
 
         for (Node nn : network.getNodes().values()){
-            for(Id<Link> linkId : links_delete){
-                if(nn.getInLinks().containsKey(linkId)){
-                    nn.removeInLink(linkId);
-                }
-                else if(nn.getOutLinks().containsKey(linkId)){
-                    nn.removeOutLink(linkId);
-                }
-            }
-            if(!(nn.getOutLinks().size()+nn.getInLinks().size() == 0)){
-                NetworkUtils.createAndAddNode(outNetwork,nn.getId(),nn.getCoord());
-                nodeMap.put(roundCoord(nn.getCoord()), nn);
-            } else{
-                System.out.println("# # # Excluded node " + nn.toString() + " # # #");
-            }
+//            for(Id<Link> linkId : links_delete){
+//                if(nn.getInLinks().containsKey(linkId)){
+//                    nn.removeInLink(linkId);
+//                }
+//                else if(nn.getOutLinks().containsKey(linkId)){
+//                    nn.removeOutLink(linkId);
+//                }
+//            }
+//            if(!(nn.getOutLinks().size()+nn.getInLinks().size() == 0)){
+//                NetworkUtils.createAndAddNode(newNetwork,nn.getId(),nn.getCoord());
+//                nodeMap.put(roundCoord(nn.getCoord()), nn);
+//            } else{
+//                System.out.println("# # # Excluded node " + nn.toString() + " # # #");
+//            }
+
+            // workaround to keep all nodes. Comment if not needed (and include version above again)
+            NetworkUtils.createAndAddNode(newNetwork,nn.getId(),nn.getCoord());
+            nodeMap.put(roundCoord(nn.getCoord()), nn);
+
+
         }
         for(Id<Link> llId: network.getLinks().keySet()){
             if(!links_delete.contains(llId)){
                 Link ll = network.getLinks().get(llId);
-                NetworkUtils.createAndAddLink(outNetwork, llId, ll.getFromNode(), ll.getToNode(), ll.getLength(),
+                NetworkUtils.createAndAddLink(newNetwork, llId, ll.getFromNode(), ll.getToNode(), ll.getLength(),
                         ll.getFreespeed(), ll.getCapacity(), ll.getNumberOfLanes()).setAllowedModes(ll.getAllowedModes());
 //                network.getLinks().get(llId).setCapacity(0.);
 //                network.getLinks().get(llId).setFreespeed(0.);
 //                System.out.println("# # # Excluded link " + llId.toString() + " # # #");
             }
             else{
-                System.out.println("# # # Excluded link " + llId.toString() + " # # #");
+                Link ll = network.getLinks().get(llId);
+                NetworkUtils.createAndAddLink(newNetwork, llId, ll.getFromNode(), ll.getToNode(), ll.getLength(),
+                    ll.getFreespeed(), 0., ll.getNumberOfLanes()).setAllowedModes(new HashSet<>());
+//                System.out.println("# # # Excluded link " + llId.toString() + " # # #");
+                System.out.println("# # # Freespeed, capacity and numLanes of link " + llId.toString() + " = 0. !!  # # #");
             }
         }
     }
@@ -165,7 +196,7 @@ public class NetworkMod {
         return false;
     }
 
-    private void importNetworkElements(String filePath, Network network, Map<Coord, Node> nodeMap) throws IOException {
+    private void importNetworkElements(String filePath, Network newNetwork, Map<Coord, Node> nodeMap) throws IOException {
 
         Node fromNode, toNode;
         Id<Node> nodeId;
@@ -195,7 +226,7 @@ public class NetworkMod {
 
                 if(!nodeMap.containsKey(coord_start)) {
                     nodeId = Id.createNodeId(col[0].substring(0,5)+"Node_"+i++);
-                    fromNode = NetworkUtils.createAndAddNode(network, nodeId, coord_start);
+                    fromNode = NetworkUtils.createAndAddNode(newNetwork, nodeId, coord_start);
                     System.out.println("New Node: "+fromNode);
                     nodeMap.put(coord_start,fromNode);
                 }
@@ -204,7 +235,7 @@ public class NetworkMod {
                 }
                 if(!nodeMap.containsKey(coord_end)) {
                     nodeId = Id.createNodeId(col[0].substring(0,5)+"Node_"+i++);
-                    toNode = NetworkUtils.createAndAddNode(network, nodeId, coord_end);
+                    toNode = NetworkUtils.createAndAddNode(newNetwork, nodeId, coord_end);
                     System.out.println("New Node: "+toNode);
                     nodeMap.put(coord_end,toNode);
                 }
@@ -220,7 +251,7 @@ public class NetworkMod {
 //                String[] mode = col[9].substring(1, col.length-2).split(",");
 //                modes.addAll(Arrays.asList(mode.clone()));
 
-                link = NetworkUtils.createAndAddLink(network, linkId, fromNode, toNode, length, freespeed, capacity, permlanes);
+                link = NetworkUtils.createAndAddLink(newNetwork, linkId, fromNode, toNode, length, freespeed, capacity, permlanes);
                 link.setAllowedModes(modes);
 
                 System.out.println("From Node: "+fromNode);
@@ -289,71 +320,255 @@ public class NetworkMod {
         }
     }
 
-    private void reorderNetworkElements(Network network){
+    private void reorderNetworkElements(Network newNetwork){
         if(changeId == "deges") {
             Id<Link> linkId = Id.createLinkId("degesLink_32");
-            network.getLinks().get(Id.createLinkId(7619)).setFromNode(network.getLinks().get(linkId).getToNode());
-            network.getLinks().get(Id.createLinkId(29191)).setToNode(network.getLinks().get(linkId).getFromNode());
+            newNetwork.getLinks().get(Id.createLinkId(7619)).setFromNode(newNetwork.getLinks().get(linkId).getToNode());
+            newNetwork.getLinks().get(Id.createLinkId(29191)).setToNode(newNetwork.getLinks().get(linkId).getFromNode());
 
             linkId = Id.createLinkId("degesLink_38");
-            network.getLinks().get(Id.createLinkId(24150)).setToNode(network.getLinks().get(linkId).getFromNode());
-            network.getLinks().get(Id.createLinkId(41431)).setFromNode(network.getLinks().get(linkId).getToNode());
+            newNetwork.getLinks().get(Id.createLinkId(24150)).setToNode(newNetwork.getLinks().get(linkId).getFromNode());
+            newNetwork.getLinks().get(Id.createLinkId(41431)).setFromNode(newNetwork.getLinks().get(linkId).getToNode());
 
             linkId = Id.createLinkId("degesLink_36");
-            network.getLinks().get(Id.createLinkId(57000)).setFromNode(network.getLinks().get(linkId).getToNode());
-            network.getLinks().get(Id.createLinkId(56999)).setToNode(network.getLinks().get(linkId).getToNode());
+            newNetwork.getLinks().get(Id.createLinkId(57000)).setFromNode(newNetwork.getLinks().get(linkId).getToNode());
+            newNetwork.getLinks().get(Id.createLinkId(56999)).setToNode(newNetwork.getLinks().get(linkId).getToNode());
         } else if(changeId == "citiz") {
             Id<Link> linkId = Id.createLinkId("citizLink_16");
-            network.getLinks().get(Id.createLinkId(24150)).setToNode(network.getLinks().get(linkId).getFromNode());
-            network.getLinks().get(Id.createLinkId(41431)).setFromNode(network.getLinks().get(linkId).getToNode());
+            newNetwork.getLinks().get(Id.createLinkId(24150)).setToNode(newNetwork.getLinks().get(linkId).getFromNode());
+            newNetwork.getLinks().get(Id.createLinkId(41431)).setFromNode(newNetwork.getLinks().get(linkId).getToNode());
 
             linkId = Id.createLinkId("citizLink_10");
-            network.getLinks().get(Id.createLinkId(41439)).setToNode(network.getLinks().get(linkId).getFromNode());
+            newNetwork.getLinks().get(Id.createLinkId(41439)).setToNode(newNetwork.getLinks().get(linkId).getFromNode());
         } else{
             System.out.println("No correspondent reorderSet found! Change ID probably not set/set wrong!");
         }
     }
 
-    private void adaptRoutes(Scenario scenario, Network network){
+    private void adaptActivities(Scenario scenario, Network newNetwork){
         int[] blackList = {26584,78176,81897,81898,113981,81925,80096,134583,15369,32494,131590,131587,47471,92218,
                 130741,78175,5637,5638,131346,131347,142993,142994,142995,142996,142997,142998,9886,9887,8572,8573,
-                46146,134490,35093};
-        new PopulationReader(scenario);
-        Population population = PopulationUtils.createPopulation(scenario.getConfig(), network);
-        PopulationFactory popFactory = population.getFactory();
-//        RouteFactories rFactories = popFactory.getRouteFactories();
-        boolean correctLinks = false;
-
-        for(Person pp: population.getPersons().values()){
-            for(Plan plan:pp.getPlans()){
-                for(Leg leg:PopulationUtils.getLegs(plan)){
-                    if(leg.getMode().contains("car") || leg.getMode().contains("freight") || leg.getMode().contains("ride")) {
+                46146,134490,35093,80087,149674,137210,147564};
+        for(Person pp: scenario.getPopulation().getPersons().values()) {
+            for (Plan plan : pp.getPlans()) {
+                for (PlanElement pe : plan.getPlanElements()) {
+                    if(pe instanceof Activity){
+                        Activity activity = (Activity) pe;
                         for (int linkId : blackList) {
-                            if (leg.getRoute() != null) {
-                                //System.out.println(leg.getRoute());
-//                            if (leg.getRoute().getRouteDescription().contains(String.valueOf(linkId))) {
-                                if (!leg.getRoute().getRouteType().contains(String.valueOf(linkId))) {
-                                    System.out.println(leg.getRoute().getRouteType().contains(String.valueOf(linkId)));
-                                    System.out.println(plan);
-                                    correctLinks = true;
+                            //System.out.println(leg.getRoute());
+                            if (Id.createLinkId(linkId).equals(activity.getLinkId())) {
+                                System.out.println(activity);
+                                System.out.println("FOUND AN AFFECTED LINK ON ACTIVITY! " + linkId);
+                                double radio = 5.;
+                                boolean linkFound = false;
+                                while (!linkFound) {
+                                    Collection<Node> nearestNodes = NetworkUtils.getNearestNodes(newNetwork, activity.getCoord(), radio);
+                                    for (Node replaceNode : nearestNodes) {
+                                        System.out.println(String.format("Candidate node %s with distance %f m from activity Coord %s",
+                                                replaceNode.getId(),
+                                                NetworkUtils.getEuclideanDistance(replaceNode.getCoord(), activity.getCoord()),
+                                                activity.getCoord()));
+                                        if (!replaceNode.getId().toString().contains("pt")) {
+                                            for (Id<Link> replaceLink : replaceNode.getInLinks().keySet()) {
+                                                if(replaceLink.toString().contains(changeId)){
+                                                    linkFound = true;
+                                                }
+                                                else if (!replaceLink.toString().contains("pt")) {
+                                                    for(int compareLink : blackList){
+                                                        if(compareLink == Integer.valueOf(replaceLink.toString())){
+                                                            linkFound = false;
+                                                            break;
+                                                        }
+                                                        else{
+                                                            linkFound = true;
+                                                        }
+                                                    }
+                                                }
+                                                if(linkFound) {
+                                                    System.out.println(String.format("Replace activity linkId %s by %s", activity.getLinkId(), replaceLink));
+                                                    activity.setLinkId(replaceLink);
+                                                    for (PlanElement pe2 : plan.getPlanElements()) {
+                                                        if(pe2 instanceof Leg){
+                                                            Leg leg = (Leg) pe2;
+                                                            if(leg.getRoute().getStartLinkId().equals(activity.getLinkId())){
+                                                                System.out.println(String.format("Replace startLinkId %s by %s", activity.getLinkId(), replaceLink));
+                                                                leg.getRoute().setStartLinkId(replaceLink);
+                                                            }
+                                                            if(leg.getRoute().getEndLinkId().equals(activity.getLinkId())){
+                                                                System.out.println(String.format("Replace endLinkId %s by %s", activity.getLinkId(), replaceLink));
+                                                                leg.getRoute().setEndLinkId(replaceLink);
+                                                            }
+                                                        }
+                                                    }
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                        if(linkFound){
+                                            break;
+                                        }
+                                    }
+                                    System.out.println("Set new radio to "+(radio+10.));
+                                    radio += 10.;
                                 }
                             }
                         }
                     }
                 }
-                if(correctLinks){
-                    if(population.getPersons().containsKey(pp)){
-                       population.getPersons().get(pp).addPlan(plan);
-                    }
-                    else {
-                        Person person = popFactory.createPerson(pp.getId());
-                        person.addPlan(plan);
-                        population.addPerson(person);
-                    }
-                }
             }
         }
-        new PopulationWriter(population).write(outputPopulation);
+        for (Person pp : scenario.getPopulation().getPersons().values()) {
+            for (Plan plan : pp.getPlans()) {
+                PopulationUtils.resetRoutes(plan);
+            }
+        }
+        new PopulationWriter(scenario.getPopulation()).write(outputPopulation);
+    }
+
+    private void adaptRoutes(Scenario scenario, Network network, Network newNetwork){
+        int[] blackList = {26584,78176,81897,81898,113981,81925,80096,134583,15369,32494,131590,131587,47471,92218,
+                130741,78175,5637,5638,131346,131347,142993,142994,142995,142996,142997,142998,9886,9887,8572,8573,
+                46146,134490,35093,80087,149674,137210,147564};
+//        List<String> passedLinks = new ArrayList<String>();
+        new PopulationReader(scenario);
+//        Population newPop = PopulationUtils.createPopulation(scenario.getConfig(), newNetwork);
+//        AttributesUtils.copyTo(scenario.getPopulation().getAttributes(), newPop.getAttributes());
+//        PopulationFactory popFactory = newPop.getFactory();
+//        ActivityFacilities actFacilities = scenario.getActivityFacilities();
+//        RouteFactories rFactories = popFactory.getRouteFactories();
+
+        Config config = scenario.getConfig();
+//        config.subtourModeChoice().
+
+        for(Person pp: scenario.getPopulation().getPersons().values()){
+            for(Plan plan:pp.getPlans()){
+                boolean correctLinks = true;
+//                for(Leg leg:PopulationUtils.getLegs(plan)){
+                for(PlanElement pe: plan.getPlanElements()){
+                    List<String> passedLinks = new ArrayList<>();
+                    if(pe instanceof Leg) {
+                        Leg leg = (Leg) pe;
+
+//                        if (leg.getMode().contains("car") || leg.getMode().contains("freight") || leg.getMode().contains("ride")) {
+                            if (leg.getRoute() != null) {
+                                passedLinks.addAll(Arrays.asList(leg.getRoute().getRouteDescription().split(" ")));
+                                passedLinks.add(String.valueOf(leg.getRoute().getStartLinkId()));
+                                passedLinks.add(String.valueOf(leg.getRoute().getEndLinkId()));
+                                for (int linkId : blackList) {
+                                    //System.out.println(leg.getRoute());
+                                    if (passedLinks.contains(String.valueOf(linkId))) {
+//                                if (leg.getRoute().getRouteDescription().contains(String.valueOf(linkId))) {
+                                        //                                if (!leg.getRoute().getRouteType().contains(String.valueOf(linkId))) {
+                                        System.out.println(leg.getRoute().getRouteType().equals(String.valueOf(linkId)));
+                                        System.out.println(plan);
+                                        System.out.println("FOUND AN AFFECTED LINK ON LEG! " + linkId);
+
+                                        PopulationUtils.resetRoutes(plan);
+
+                                        /*
+
+                                        ControlerConfigGroup.RoutingAlgorithmType routingAlgorithmType = config.controler().getRoutingAlgorithmType();
+
+
+
+                                        TripRouter tripRouter = new TripRouter();
+
+                                        Provider<TripRouter> tripRouterProvider = (Provider<TripRouter>) Types.javaxProviderOf(tripRouter.getClass());
+
+                                        new ReRoute(scenario.getActivityFacilities(),tripRouterProvider, config.global()).handlePlan(plan);
+
+                                        NetworkUtils.getNearestLinkExactly(ou)
+
+                                        SwissRailRaptor swissRailRaptor = new SwissRailRaptor().
+
+
+                                         */
+
+//                                    plan.getType();
+//                                    leg.getRoute().getStartLinkId();
+//                                    leg.getMode(); leg.getRoute().getRouteType();
+//
+//
+//
+//
+//                                    Activity activity = null;
+//                                    activity.getFacilityId();
+//                                    activity.getLinkId();
+//                                    FacilitiesUtils.decideOnLink(FacilitiesUtils.wrapActivity(activity),network);
+//                                    FacilitiesUtils.setLinkID(FacilitiesUtils.wrapActivity(activity),
+//                                            FacilitiesUtils.decideOnLink(FacilitiesUtils.wrapActivity(activity),network).getId());
+//                                    Facility facility = FacilitiesUtils.wrapActivity(activity);
+//                                    facility.getLinkId();
+
+//                                    FacilitiesUtils.decideOnLink();
+
+
+//                                    List<PlanElement> planElements = plan.getPlanElements();
+//                                    PlanElement planElement = planElements.get(0);
+//
+//
+//
+//                                    ReRoute reRoute = new ReRoute();
+//                                    PlanStrategy planStrategy = reRoute.get();
+//
+//                                    ((java.util.ArrayList)((HashMap.Node)((HashMap)controler.config.strategy.parameterSetsPerType).entrySet().toArray()[0]).getValue()).get(5);
+//                                    TripStructureUtils.Trip trip = TripStructureUtils.getActivities();
+//                                    trip.getLegsOnly();
+//                                    TripRouter tripRouter = new TripRouter();
+//
+//                                    tripRouter.
+
+                                        correctLinks = false;
+                                        break;
+                                    }
+                                }
+                            }
+                            else{
+//                                passedLinks.add(leg.)
+                            }
+//                        }
+                    }
+                    else{
+                        Activity activity = (Activity) pe;
+                        passedLinks.add(String.valueOf(activity.getLinkId()));
+                        for (int linkId : blackList) {
+                            //System.out.println(leg.getRoute());
+                            if (passedLinks.contains(String.valueOf(linkId))) {
+//                                if (leg.getRoute().getRouteDescription().contains(String.valueOf(linkId))) {
+                                //                                if (!leg.getRoute().getRouteType().contains(String.valueOf(linkId))) {
+                                System.out.println(activity);
+                                System.out.println("FOUND AN AFFECTED LINK ON ACTIVITY! " + linkId);
+
+                                activity.setLinkId(NetworkUtils.getNearestLinkExactly(newNetwork, activity.getCoord()).getId());
+//                                ActivityFacility facility = actFacilities.getFacilities().get(activity.getFacilityId());
+//                                ActivityFacility newFacility = actFacilities.getFactory().createActivityFacility(facility.getId(),facility.getCoord(), NetworkUtils.getNearestLinkExactly(newNetwork,facility.getCoord()).getId());
+//                                actFacilities.getFacilities().put(facility.getId(),newFacility);
+
+                                PopulationUtils.resetRoutes(plan);
+                                correctLinks = false;
+                                break;
+                            }
+                        }
+                    }
+                    if(!correctLinks) {
+                        break;
+                    }
+                }
+//                if(correctLinks){
+//                    if(newPop.getPersons().containsKey(pp)){
+//                       newPop.getPersons().get(pp).addPlan(plan);
+//                    }
+//                    else {
+//                        Person person = popFactory.createPerson(pp.getId());
+//                        person.addPlan(plan);
+//                        newPop.addPerson(person);
+//                    }
+//                }
+            }
+
+        }
+        System.out.println("DONE!");
+//        new PopulationWriter(newPop).write(outputPopulation);
     }
 
 }

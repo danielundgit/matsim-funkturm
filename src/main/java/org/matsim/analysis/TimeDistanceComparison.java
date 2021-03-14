@@ -16,17 +16,20 @@ public class TimeDistanceComparison {
     private static BufferedWriter bufferedWriter;
     Config baseConfig; Scenario baseScenario;
     Config compareConfig; Scenario compareScenario;
-    String outputPath = "TimeDistanceDifferences.txt";
+    String outputPath = "comparisons/";
+    String file = "TimeDistanceDifferences.txt";
 
     public TimeDistanceComparison(Config base, Config compare){
         baseConfig = base; compareConfig = compare;
         baseScenario = ScenarioUtils.loadScenario(baseConfig);
         compareScenario = ScenarioUtils.loadScenario(compareConfig);
+        outputPath = outputPath+file;
     }
 
-    public TimeDistanceComparison(Config cBase, Config cCompare, Scenario sBase, Scenario sCompare){
+    public TimeDistanceComparison(Config cBase, Config cCompare, Scenario sBase, Scenario sCompare, String fileName){
         baseConfig = cBase; compareConfig = cCompare;
         baseScenario = sBase; compareScenario = sCompare;
+        outputPath = outputPath+fileName;
     }
 
 
@@ -35,8 +38,8 @@ public class TimeDistanceComparison {
         List<Plan> originalPlans = getSelectedPlans(baseScenario);
         List<Plan> modifiedPlans = getSelectedPlans(compareScenario);
 
-        Double[] originalTime = calculateTIme(originalPlans);
-        Double[] modifiedTime = calculateTIme(modifiedPlans);
+        Double[] originalTime = calculateTime(originalPlans);
+        Double[] modifiedTime = calculateTime(modifiedPlans);
 
         Double[] originalDistance = calculateDistance(originalPlans);
         Double[] modifiedDistance = calculateDistance(modifiedPlans);
@@ -55,7 +58,7 @@ public class TimeDistanceComparison {
             bufferedWriter = new BufferedWriter(fileWriter);
             bufferedWriter.write( "OriginalTime in hours: " + originalTime[0]/3600 + "\n ModifiedTime in hours: " + modifiedTime[0]/3600
                     + "\n OriginalDistance in kilometers: " + originalDistance[0]/1000 + "\n ModifiedDistance in kilometers: " + modifiedDistance[0]/1000
-                    + "\n Time difference in hours: " + timeDifference /3600 + "\n Distance differnce in kilometers: " + distanceDifference/1000 + "\n");
+                    + "\n Time difference in hours: " + timeDifference /3600 + "\n Distance difference in kilometers: " + distanceDifference/1000 + "\n");
             bufferedWriter.write( "OriginalMeanTime in hours: " + originalTime[1]/3600 + "\n ModifiedMeanTime in hours: " + modifiedTime[1]/3600
                     + "\n OriginalMeanDistance in kilometers: " + originalDistance[1]/1000 + "\n ModifiedMeanDistance in kilometers: " + modifiedDistance[1]/1000
                     + "\n mean Time difference in hours: " + meanTimeDifference /3600 + "\n mean Distance difference in kilometers: " + meanDistanceDifference/1000 + "\n");
@@ -78,7 +81,7 @@ public class TimeDistanceComparison {
 
     //method calculates how much travel time agents aggregate [0] and the mean time per plan [1]
     //The method uses as input a list of plans
-    private static Double[] calculateTIme(List<Plan> Plans) {
+    private static Double[] calculateTime(List<Plan> Plans) {
         Double[] times = new Double[2];
         Double time = 0.;
         double ctr = 0.;
