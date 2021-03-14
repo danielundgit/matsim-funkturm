@@ -32,7 +32,7 @@ import java.util.*;
 public class RunAnalysis {
 //    final String pathLOR = "scenarios/berlin-v5.4-1pct/input/LOR.shp";
     // Newer LOR, recquires new LOR definition
-    final String pathLOR = "scenarios/berlin-v5.4-1pct/input/LOR_PLR.shp";
+    final String pathLOR = "scenarios/berlin-v5.4-1pct/input/LOR.shp";
     String selectDefault = "base";
     final String configFile = "/output/berlin-v5.4-1pct.output_config.xml";
     final String countsFile ="/output/berlin-v5.4-1pct.output_counts.xml.gz";
@@ -119,19 +119,6 @@ public class RunAnalysis {
             }
             else {
                 System.out.println("For some reason, the loaded shapes are null! No exampleCounts created!");
-//                Map<Integer,Geometry> lors = getLOR();
-//                for (Id<Link> linkId : scenario.getNetwork().getLinks().keySet()) {
-//                    Link link = scenario.getNetwork().getLinks().get(linkId);
-//                    Point linkADF = MGC.xy2Point(link.getCoord().getX(), link.getCoord().getY());
-//                    for (Geometry lor : lors.values()) {
-//                        if (lor.contains(linkADF)) {
-//                            if (!linkId.toString().contains("pt")) {
-//                                if (link.getCapacity() != 0)
-//                                    linksADF.add(linkId.toString());
-//                            }
-//                        }
-//                    }
-//                }
             }
             countLinks = linksADF.toArray(new String[linksADF.size()]);
         }
@@ -153,7 +140,7 @@ public class RunAnalysis {
         return counts;
     }
 
-    public Map<Integer, Double> getResidentDensity() {
+    public Map<Integer, Double> getResidentDensity(boolean writeToFile) {
 
         double area, counts = 0.;
         Map<Integer, Double> density = new HashMap<>();
@@ -163,25 +150,26 @@ public class RunAnalysis {
             for (Person pp : population.getPersons().values()) {
                 Activity homeActivity = PopulationUtils.getFirstActivity(pp.getSelectedPlan());
                 if(density.get(zone) != null) {counts = density.get(zone);}
-                if(shapes.get(zone).contains(MGC.coord2Point(homeActivity.getCoord()))){density.put(zone,counts+1.);}
+                if(shapes.get(zone).contains(MGC.coord2Point(homeActivity.getCoord()))) {density.put(zone,counts+1.);}
             }
-            area = shapes.get(zone).getArea();
+            area = shapes.get(zone).getArea()/1000000; //hopefully to get from m^2 to km^2
             density.put(zone,density.get(zone)/area);
         }
 
+        writeOut(density);
+        if(writeToFile){
+            writeToFile(density, "resident density", "csv");
+        }
         return density;
     }
 
-
-    public Map<String, Integer> doTrafficCounts() throws IOException {
-        Map<Integer,Geometry> lors = getLOR();
-        Map<String, Integer> trafficCounts = new HashMap<>(lors.size());
+    public Map<Integer, Integer> doTrafficCounts() {
+        Map<Integer, Integer> trafficCounts = new HashMap<>(shapes.size());
         Population population = scenario.getPopulation();
         Map<Id<Link>, ? extends Link> links = scenario.getNetwork().getLinks();
-
-        for(Integer lor:lors.keySet()) {
-            trafficCounts.put(String.valueOf(lor), 0);
-            System.out.println(String.format("Start analyzing LOR %d of %d", trafficCounts.size(), lors.size()));
+        for(Integer zone:shapes.keySet()) {
+            trafficCounts.put(zone, 0);
+            System.out.println(String.format("Start analyzing LOR %d of %d", trafficCounts.size(), shapes.size()));
             for (Person pp : population.getPersons().values()) {
                 boolean passedZone = false;
                 for(Leg leg: PopulationUtils.getLegs(pp.getSelectedPlan())){
@@ -196,12 +184,12 @@ public class RunAnalysis {
                                  if(link == null){
                                      Coord coord_s = links.get(Id.createLinkId(leg.getRoute().getStartLinkId())).getCoord();
                                      Coord coord_e = links.get(Id.createLinkId(leg.getRoute().getStartLinkId())).getCoord();
-                                     if(lors.get(lor).contains(MGC.coord2Point(coord_s)) || lors.get(lor).contains(MGC.coord2Point(coord_e))){
+                                     if(shapes.get(zone).contains(MGC.coord2Point(coord_s)) || shapes.get(zone).contains(MGC.coord2Point(coord_e))){
                                          passedZone = true;
                                          break;
                                      }
                                  }
-                                 else if(lors.get(lor).contains(MGC.coord2Point(link.getCoord()))){
+                                 else if(shapes.get(zone).contains(MGC.coord2Point(link.getCoord()))){
                                      passedZone = true;
                                      break;
                                  }
@@ -209,16 +197,60 @@ public class RunAnalysis {
                          }
                     }
                     if(passedZone)
-                    trafficCounts.put(String.valueOf(lor), trafficCounts.get(lor)+1);
+                    trafficCounts.put(zone, trafficCounts.get(zone)+1);
                 }
             }
         }
         return trafficCounts;
     }
 
+// try to write/get something as a shape file
+//    public Map<Integer,Geometry> getShape() throws IOException {
+//        Map<Integer,Geometry> allLOR = new Hashtable<>();
+//        FileDataStore store = FileDataStoreFinder.getDataStore(new File("C:/Users/djp/Desktop/TUB/MATSim/matsim-2021/git/matsim-funkturm/funkturm_deges_t2/output/deges_t2-gridADF.csv"));
+//        FeatureReader<SimpleFeatureType, SimpleFeature> reader = store.getFeatureReader();
+//        List<SimpleFeature> features = new ArrayList<>();
+//
+//        for( ; reader.hasNext(); ){
+//            SimpleFeature result = reader.next();
+//            features.add(result);
+//        }
+//        reader.close();
+//
+//        for(SimpleFeature feature:features) {
+//            int lorId = Integer.parseInt(feature.getID());
+//            Geometry lorGeo = (Geometry) feature.getDefaultGeometry();
+//            allLOR.put(lorId,lorGeo);   // cast as Polygon, lorId to Integer through split regex [1]
+//        }
+//        return allLOR;
+//    }
+
+    public Map<Id<Person>, Person> getADFpersons(boolean writeToFile) {
+
+        Population population = scenario.getPopulation();
+        Map<Double, Double> coordinatesH = new HashMap<>();
+
+        if(shapes.size()>9){System.out.println("Warning: The covered area of personsADF seems to be bigger than the predefined ADF area");}
+
+        Map<Id<Person>, Person> personsADF = new HashMap<>();
+        for (Person pp : population.getPersons().values()) {
+            Activity homeActivity = PopulationUtils.getFirstActivity(pp.getSelectedPlan());
+            Point home = MGC.xy2Point(homeActivity.getCoord().getX(),homeActivity.getCoord().getY());
+            for(Geometry zone : shapes.values()) {
+                if (zone.contains(home)) {
+                    personsADF.put(pp.getId(), pp);
+                    coordinatesH.put(homeActivity.getCoord().getX(),homeActivity.getCoord().getY());
+                }
+            }
+        }
+        writeOut(coordinatesH);
+        if(writeToFile) { writeToFile(coordinatesH, "coordinatesOfHomesADF", "csv"); }
+        return personsADF;
+    }
 
     public Map<Integer,Geometry> getLOR() throws IOException {
-        Map<Integer,Geometry> allLOR = new Hashtable<>();
+
+        Map<Integer,Geometry> allLOR = new HashMap<>();
         FileDataStore store = FileDataStoreFinder.getDataStore(new File(pathLOR));
         FeatureReader<SimpleFeatureType, SimpleFeature> reader = store.getFeatureReader();
         List<SimpleFeature> features = new ArrayList<>();
@@ -228,7 +260,6 @@ public class RunAnalysis {
             features.add(result);
         }
         reader.close();
-
 
         for(SimpleFeature feature:features) {
             String[] sLorId = feature.getID().split("\\.");
@@ -252,57 +283,13 @@ public class RunAnalysis {
         return allLOR;
     }
 
-
-
-//    public Map<Integer,Geometry> getShape() throws IOException {
-//        Map<Integer,Geometry> allLOR = new Hashtable<>();
-//        FileDataStore store = FileDataStoreFinder.getDataStore(new File("C:/Users/djp/Desktop/TUB/MATSim/matsim-2021/git/matsim-funkturm/funkturm_deges_t2/output/deges_t2-gridADF.csv"));
-//        FeatureReader<SimpleFeatureType, SimpleFeature> reader = store.getFeatureReader();
-//        List<SimpleFeature> features = new ArrayList<>();
-//
-//        for( ; reader.hasNext(); ){
-//            SimpleFeature result = reader.next();
-//            features.add(result);
-//        }
-//        reader.close();
-//
-//        for(SimpleFeature feature:features) {
-//            int lorId = Integer.parseInt(feature.getID());
-//            Geometry lorGeo = (Geometry) feature.getDefaultGeometry();
-//            allLOR.put(lorId,lorGeo);   // cast as Polygon, lorId to Integer through split regex [1]
-//        }
-//        return allLOR;
-//    }
-
-    public Map<Id<Person>, Person> getADFpersons() throws IOException {
-        Population population = scenario.getPopulation();
-        Map<Integer,Geometry> lors = getLOR();
-        Map<Double, Double> coordinatesH = new HashMap<>();
-        if(lors.size()>9){
-            System.out.println("Warning: The covered area of personsADF seems to be bigger than the predefined ADF area");
-        }
-        Map<Id<Person>, Person> personsADF = new HashMap<>();
-        for (Person pp : population.getPersons().values()) {
-            Activity homeActivity = PopulationUtils.getFirstActivity(pp.getSelectedPlan());
-            Point home = MGC.xy2Point(homeActivity.getCoord().getX(),homeActivity.getCoord().getY());
-            for(Geometry lor : lors.values()) {
-                if (lor.contains(home)) {
-                    personsADF.put(pp.getId(), pp);
-                    coordinatesH.put(homeActivity.getCoord().getX(),homeActivity.getCoord().getY());
-                }
-            }
-        }
-        writeToFile(coordinatesH, "coordinatesOfHomesADF");
-        return personsADF;
-    }
-
     public void writeOut(Object o){
         System.out.println(o);
         return;
     }
 
-    public void writeToFile(Object o, String name){
-        String outputPath = "funkturm_"+selectDefault+"/output/"+selectDefault+"-"+name+".csv";
+    public void writeToFile(Object o, String name, String extension){
+        String outputPath = "funkturm_"+selectDefault+"/output/"+selectDefault+"-"+name+"."+extension;
         try {
             FileWriter fileWriter = new FileWriter(outputPath);
             BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);

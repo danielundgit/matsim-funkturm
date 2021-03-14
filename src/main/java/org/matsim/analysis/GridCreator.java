@@ -99,7 +99,7 @@ public class GridCreator {
                         MGC.coord2Coordinate(gridADF.get(new Coord(r,c)))               // back: bottom-left corner
                 };
 //                polyADF.put(id++,gf.createPolygon(coordinates));
-                polyADF.put(id++, gf.createPolygon(coordinates).getBoundary());
+                polyADF.put(id++, gf.createPolygon(coordinates).convexHull());
             }
         }
 
