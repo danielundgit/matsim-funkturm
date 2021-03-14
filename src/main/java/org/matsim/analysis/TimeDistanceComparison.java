@@ -5,11 +5,13 @@ import org.matsim.api.core.v01.population.*;
 import org.matsim.core.config.Config;
 import org.matsim.core.scenario.ScenarioUtils;
 
+import java.awt.*;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class TimeDistanceComparison {
 
@@ -27,6 +29,12 @@ public class TimeDistanceComparison {
     }
 
     public TimeDistanceComparison(Config cBase, Config cCompare, Scenario sBase, Scenario sCompare, String fileName){
+        baseConfig = cBase; compareConfig = cCompare;
+        baseScenario = sBase; compareScenario = sCompare;
+        outputPath = outputPath+fileName;
+    }
+
+    public TimeDistanceComparison(Config cBase, Config cCompare, Scenario sBase, Scenario sCompare, String fileName, Map<Integer, Polygon> polyMap){
         baseConfig = cBase; compareConfig = cCompare;
         baseScenario = sBase; compareScenario = sCompare;
         outputPath = outputPath+fileName;

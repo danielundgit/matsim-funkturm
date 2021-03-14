@@ -1,8 +1,8 @@
 package org.matsim.analysis;
 
 import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.Polygon;
 import org.matsim.api.core.v01.Coord;
 import org.matsim.core.utils.geometry.geotools.MGC;
 
@@ -22,15 +22,17 @@ public class GridCreator {
     int Y_MIN = 5818060; // south (!)
     int Y_MAX = 5821530; // north (!)
 
-    public GridCreator(){
+    public GridCreator() {
         createGrid();
     }
-    public GridCreator(int rows, int columns){
+
+    public GridCreator(int rows, int columns) {
         this.rows = rows;
         this.cols = columns;
         createGrid();
     }
-    public GridCreator(int length){
+
+    public GridCreator(int length) {
         rows = length;
         cols = length;
         createGrid();
@@ -39,9 +41,9 @@ public class GridCreator {
     int width = X_MAX-X_MIN;
     int height = Y_MAX-Y_MIN;
     Map<Coord, Coord> cells = null;
-    Map<Integer, Polygon> polyMap = null;
+    Map<Integer, Geometry> polyMap = null;
 
-    public void createGrid(){
+    public void createGrid() {
 
         System.out.println("### Creating the grid... ###");
 
@@ -54,7 +56,6 @@ public class GridCreator {
 
         for(int r=0; r<=rows; r++){
             for(int c=0; c<=cols; c++) {
-
                 if(c==cols && r==rows){
                     cells.put(new Coord(r,c), new Coord(X_MIN+cellwidth*cols+extra_x, Y_MIN+cellheight*rows+extra_y));
                 }
@@ -73,37 +74,165 @@ public class GridCreator {
         printGrid(cells);
         polyMap = getPolygons(cells);
 
-        return;
     }
 
     public Map<Coord, Coord> getCoordMap(){
         return cells;
     }
 
-    public Map<Integer, Polygon> getPolyMap(){
+    public Map<Integer, Geometry> getPolyMap(){
         return polyMap;
     }
 
-    public Map<Integer, Polygon> getPolygons(Map<Coord,Coord> gridADF){
-        Map<Integer, Polygon> polyADF = new HashMap<>();
+    public Map<Integer, Geometry> getPolygons(Map<Coord,Coord> gridADF) {
+        Map<Integer, Geometry> polyADF = new HashMap<>();
         int id = 1;
         GeometryFactory gf = new GeometryFactory();
-        Coordinate[] coordinates = new Coordinate[5];
+
         for(int r=0; r<rows; r++) {
             for (int c = 0; c < cols; c++) {
-                coordinates = new Coordinate[]{
-                        MGC.coord2Coordinate(gridADF.get(new Coord(r,c))),
-                        MGC.coord2Coordinate(gridADF.get(new Coord(r,c+1))),
-                        MGC.coord2Coordinate(gridADF.get(new Coord(r+1,c+1))),
-                        MGC.coord2Coordinate(gridADF.get(new Coord(r+1,c))),
-                        MGC.coord2Coordinate(gridADF.get(new Coord(r,c)))
+                Coordinate[] coordinates = new Coordinate[]{
+                        MGC.coord2Coordinate(gridADF.get(new Coord(r,c))),              // bottom-left corner
+                        MGC.coord2Coordinate(gridADF.get(new Coord(r,c+1))),         // bottom-right corner
+                        MGC.coord2Coordinate(gridADF.get(new Coord(r+1,c+1))),    // top-right corner
+                        MGC.coord2Coordinate(gridADF.get(new Coord(r+1,c))),         // top-left corner
+                        MGC.coord2Coordinate(gridADF.get(new Coord(r,c)))               // back: bottom-left corner
                 };
-                polyADF.put(id++,gf.createPolygon(coordinates));
-
+//                polyADF.put(id++,gf.createPolygon(coordinates));
+                polyADF.put(id++, gf.createPolygon(coordinates).getBoundary());
             }
         }
+
+//        getPolyShape(gridADF);
+
         return polyADF;
     }
+
+    // intent to write shape file
+/*
+    public void getPolygonShape(Polygon polygon) throws IOException {
+//        SimpleFeatureType TYPE = dataStore.getSchema(typeName);
+        File newFile = new File("output.shp");
+        ShapefileDataStoreFactory dataStoreFactory = new ShapefileDataStoreFactory();
+
+        Map<String, Serializable> params = new HashMap<String, Serializable>();
+        params.put("url", URLs.fileToUrl(newFile));
+        params.put("create spatial index", Boolean.TRUE);
+
+        ShapefileDataStore newDataStore = (ShapefileDataStore) dataStoreFactory.createNewDataStore(params);
+
+
+//        newDataStore.createSchema(TYPE);
+        Transaction transaction = new DefaultTransaction("create");
+
+        String typeName = newDataStore.getTypeNames()[0];
+        SimpleFeatureSource featureSource = newDataStore.getFeatureSource(typeName);
+
+        if (featureSource instanceof SimpleFeatureStore) {
+            SimpleFeatureStore featureStore = (SimpleFeatureStore) featureSource;
+
+            featureStore.setTransaction(transaction);
+            try {
+                featureStore.addFeatures(collection);
+
+                // Now add the hexagon
+                featureStore.addFeatures(DataUtilities.collection(hexagon));
+                transaction.commit();
+            } catch (Exception problem) {
+                problem.printStackTrace();
+                transaction.rollback();
+                System.exit(-1);
+            } finally {
+                transaction.close();
+            }
+        } else {
+            System.out.println(typeName + " does not support read/write access");
+            System.exit(1);
+        }
+
+    }
+*/
+
+    // second intent
+//
+//    public void getPolyShape(Map<Coord, Coord> gridADF) throws SchemaException, IOException {
+//
+//
+//        /*
+//         * We create a FeatureCollection into which we will put each Feature created from a record
+//         * in the input csv data file
+//         */
+////        SimpleFeatureCollection collection = FeatureCollections.newCollection();
+//        String tipoShape = "Polygon";
+//        SimpleFeatureType featureType = DataUtilities.createType(tipoShape,
+//                "the_geom:" + tipoShape + ":srid=31468," + "number:Integer");
+//        DefaultFeatureCollection collection = new DefaultFeatureCollection("internal", featureType);
+//
+//        /*
+//         * GeometryFactory will be used to create the geometry attribute of each feature (a Point
+//         * object for the location)
+//         */
+//        SimpleFeatureBuilder featureBuilder = new SimpleFeatureBuilder(featureType);
+//
+//        int id = 1;
+//        GeometryFactory gf = new GeometryFactory();
+//        for(int r=0; r<rows; r++) {
+//            for (int c = 0; c < cols; c++) {
+//                Coordinate[] coordinates = new Coordinate[]{
+//                        MGC.coord2Coordinate(gridADF.get(new Coord(r,c))),
+//                        MGC.coord2Coordinate(gridADF.get(new Coord(r,c+1))),
+//                        MGC.coord2Coordinate(gridADF.get(new Coord(r+1,c+1))),
+//                        MGC.coord2Coordinate(gridADF.get(new Coord(r+1,c))),
+//                        MGC.coord2Coordinate(gridADF.get(new Coord(r,c)))
+//                };
+//                Polygon polygon = gf.createPolygon(coordinates);
+//                featureBuilder.add(polygon);
+//                featureBuilder.add(id++);
+//                SimpleFeature feature = featureBuilder.buildFeature(null);
+//                collection.add(feature);
+//            }
+//        }
+//
+//        /*
+//         * Get an output file name and create the new shapefile
+//         */
+//        File shpFile = new File("scenarios/berlin-v5.4-1pct/input/gridADF.shp");
+//
+//        ShapefileDataStoreFactory dataStoreFactory = new ShapefileDataStoreFactory();
+//        Map<String, Serializable> params = new HashMap<>();
+//        params.put("url", shpFile.toURI().toURL());
+//        params.put("create spatial index", Boolean.TRUE);
+//        ShapefileDataStore newDataStore = (ShapefileDataStore) dataStoreFactory.createNewDataStore(params);
+//        newDataStore.createSchema(featureType);
+//
+//        /*
+//         * You can comment out this line if you are using the createFeatureType method (at end of
+//         * class file) rather than DataUtilities.createType
+//         */
+////        newDataStore.forceSchemaCRS(DefaultGeographicCRS.WGS84);
+//
+//        //
+//
+//        /*
+//         * Write the features to the shapefile
+//         */
+//        Transaction transaction = new DefaultTransaction("create");
+//
+//        String typeName = newDataStore.getTypeNames()[0];
+//        SimpleFeatureSource featureSource = newDataStore.getFeatureSource(typeName);
+//
+//        if (featureSource instanceof SimpleFeatureStore) {
+//            SimpleFeatureStore featureStore = (SimpleFeatureStore) featureSource;
+//            featureStore.setTransaction(transaction);
+//            featureStore.addFeatures(collection);
+//            transaction.commit();
+//            transaction.close();
+//        } else {
+//            System.out.println(typeName + " does not support read/write access");
+//            System.exit(1);
+//        }
+//    }
+//
 
     public void printGrid(Map<Coord, Coord> grid){
         BufferedWriter writer = null;
@@ -112,9 +241,6 @@ public class GridCreator {
         try {
             // Set name of output file *csv, *txt, ... again from root folder
             File file = new File("scenarios/berlin-v5.4-1pct/input/gridADF.txt");
-            if(!file.exists()){
-                file.createNewFile();
-            }
 
             FileWriter fileWriter = new FileWriter(file);
             writer = new BufferedWriter(fileWriter);
@@ -145,19 +271,14 @@ public class GridCreator {
         }
     }
 
-    public void printGridLines_via(Map<String, Integer>[][] grid){
-        // Set URL or local Path as inputFile (from root folder, usually "Gruppe_B")
-
+    public void printGridLines(Map<String, Integer>[][] grid){
         BufferedWriter writer = null;
 
-        System.out.println("### Try to print the grid for VIA! ###");
+        System.out.println("### Print grid including lines (e.g. for Via) ###");
 
         try {
             // Set name of output file *csv, *txt, ... again from root folder
             File file = new File("gruppeB_TXSandCSV/grid4via.txt");
-            if(!file.exists()){
-                file.createNewFile();
-            }
 
             FileWriter fileWriter = new FileWriter(file);
             writer = new BufferedWriter(fileWriter);

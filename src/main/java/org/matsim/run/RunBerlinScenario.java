@@ -21,7 +21,8 @@ package org.matsim.run;
 
 import ch.sbb.matsim.routing.pt.raptor.SwissRailRaptorModule;
 import org.apache.log4j.Logger;
-import org.locationtech.jts.geom.Polygon;
+import org.geotools.feature.SchemaException;
+import org.locationtech.jts.geom.Geometry;
 import org.matsim.analysis.GridCreator;
 import org.matsim.analysis.RunAnalysis;
 import org.matsim.analysis.RunComparison;
@@ -64,12 +65,12 @@ public final class RunBerlinScenario {
 	private static final boolean[] RUNCOMPARE = new boolean[]{false, false, false};
 
 //	private static final String[] areaADF = new String[]{"115", "120", "122", "123", "130", "136", "138", "139", "140"};
-private static final String[] areaADF = new String[]{"194", "164", "191", "189", "488", "178", "177", "176"};
+	private static final Integer[] areaADF = new Integer[]{194, 164, 191, 189, 488, 178, 177, 176};
 //	private static final String[] areaADF = new String[]{"04200311", "04200207", "04400725", "04400726", "04500937", "04300415", "04300414", "04300413"};
 
 	private static final Logger log = Logger.getLogger(RunBerlinScenario.class );
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws IOException, SchemaException {
 
 		for(int mode = 0; mode < MODE.length; mode++) {
 			if (RUNSIM[mode]) {
@@ -116,7 +117,7 @@ private static final String[] areaADF = new String[]{"194", "164", "191", "189",
 		}
 
 		// prepare polygons (replacing LOR shp, having issues)
-		Map<Integer, Polygon> polyADF = new GridCreator().getPolyMap();
+		Map<Integer, Geometry> polyADF = new GridCreator().getPolyMap();
 
 		/** Analysis section */
 		for(int mode = 0; mode < MODE.length; mode++) {
@@ -125,9 +126,13 @@ private static final String[] areaADF = new String[]{"194", "164", "191", "189",
 				analysis.exampleCounts(true);
 //		analysis.writeOut(analysis.getResidentDensity());
 //		analysis.writeOut(analysis.doTrafficCounts());
-//				analysis.writeToFile(analysis.getResidentDensity(), "resident density");
+				analysis.writeToFile(analysis.getResidentDensity(), "resident density");
 //				analysis.writeToFile(analysis.doTrafficCounts(), "traffic count");
 
+//				analysis.writeOut(analysis.getShape());
+
+				analysis.writeOut(polyADF);
+				analysis.writeToFile(polyADF, "gridADF");
 
 //				analysis.getADFpersons();
 				System.out.println("Hallo!");

@@ -35,24 +35,25 @@ public class RunAnalysis {
     final String pathLOR = "scenarios/berlin-v5.4-1pct/input/LOR_PLR.shp";
     String selectDefault = "base";
     final String configFile = "/output/berlin-v5.4-1pct.output_config.xml";
-    final String countsFile ="/funkturmCounts.xml.gz";
+    final String countsFile ="/output/berlin-v5.4-1pct.output_counts.xml.gz";
     Config config; Scenario scenario;
-    Map<Integer, Polygon> shapes = null;
+    Map<Integer, Geometry> shapes = null;
 
     String[] countLinks = new String[]{"degesLink_7", "degesLink_24", "77419", "41441", "86578", "68014", "149457",
             "97427", "94289", "129176", "100186", "citizLink_28", "citizLink_27", "citizLink_21"};
-    String[] areaADF = new String[]{};
+    Integer[] areaADF = new Integer[]{};
 
-    public RunAnalysis(String select, String[] lookupList){
+    public RunAnalysis(String select, Integer[] lookupList) throws IOException {
         selectDefault = select;
         config = ConfigUtils.loadConfig("funkturm_"+select+configFile);
         config.network().setInputFile("berlin-v5.4-1pct.output_network.xml.gz");
         config.plans().setInputFile("berlin-v5.4-1pct.output_plans.xml.gz");
         scenario = ScenarioUtils.loadScenario(config);
         areaADF = lookupList;
+        shapes = getLOR();
     }
 
-    public RunAnalysis(String select, Map<Integer, Polygon> shapeMap){
+    public RunAnalysis(String select, Map<Integer, Geometry> shapeMap){
         selectDefault = select;
         config = ConfigUtils.loadConfig("funkturm_"+select+configFile);
         config.network().setInputFile("berlin-v5.4-1pct.output_network.xml.gz");
@@ -61,28 +62,27 @@ public class RunAnalysis {
         shapes = shapeMap;
     }
 
-    public RunAnalysis(String select){
+    public RunAnalysis(String select) throws IOException {
         selectDefault = select;
         config = ConfigUtils.loadConfig("funkturm_"+select+configFile);
         config.network().setInputFile("berlin-v5.4-1pct.output_network.xml.gz");
         config.plans().setInputFile("berlin-v5.4-1pct.output_plans.xml.gz");
         scenario = ScenarioUtils.loadScenario(config);
-        List<String> allLOR = new ArrayList<>();
-//      Newer LOR system (01/2021)
-        //        for(int i=1;i<=542;i++){
-        for(int i=1;i<=447;i++){
-            allLOR.add(String.valueOf(i));
-        }
-        areaADF = (String[]) allLOR.toArray();
+        System.out.println("You did not select a specific area! It will try to analyze all shapes [default: "+pathLOR+"]\n" +
+                "The analysis may take some time ...");
+        shapes = getLOR();
     }
 
-    public RunAnalysis(){
+    public RunAnalysis() throws IOException {
+        System.out.println("You did not select a specific case! It will take the preset [default: "+selectDefault+"]");
         config = ConfigUtils.loadConfig("funkturm_"+selectDefault+configFile);
         config.network().setInputFile("berlin-v5.4-1pct.output_network.xml.gz");
         config.plans().setInputFile("berlin-v5.4-1pct.output_plans.xml");
         scenario = ScenarioUtils.loadScenario(config);
+        System.out.println("You did not select a specific area! It will try to analyze all shapes [default: "+pathLOR+"]\n" +
+                "The analysis may take some time ...");
+        shapes = getLOR();
     }
-
 
     public Counts<Link> exampleCounts(boolean considerAllADFlinks) throws IOException {
         if(considerAllADFlinks){
@@ -92,26 +92,46 @@ public class RunAnalysis {
                 for(Id<Link> linkId:scenario.getNetwork().getLinks().keySet()){
                     Link link = scenario.getNetwork().getLinks().get(linkId);
                     Point linkADF = MGC.xy2Point(link.getCoord().getX(),link.getCoord().getY());
-                    for(Polygon zone: shapes.values()) {
+                    for(Geometry zone: shapes.values()) {
                         if (zone.contains(linkADF)) {
-                            if(link.getCapacity()!=0)
-                                linksADF.add(linkId.toString());
+                            if(!linkId.toString().contains("pt")) {
+                                if (
+                                        (link.getCapacity() != 0
+//                                        && link.getFreespeed() > 5.
+//                                        && link.getLength() > 150.
+                                        )
+//                                        || linkId.toString().contains(selectDefault)
+                                ){
+//                                    Set<Id<Link>> neighborLinks = scenario.getNetwork().getNodes().get(link.getFromNode().getId()).getInLinks().keySet();
+//                                    int cc = 0;
+//                                    for(Id<Link> neighborLink:neighborLinks){
+//                                        if(linksADF.contains(neighborLink.toString())) {
+//                                            cc++;
+//                                        }
+//                                    }
+//                                    if(cc==0)
+                                    linksADF.add(linkId.toString());
+                                }
+                            }
                         }
                     }
                 }
             }
             else {
-                Hashtable<String, Geometry> lors = getLOR();
-                for (Id<Link> linkId : scenario.getNetwork().getLinks().keySet()) {
-                    Link link = scenario.getNetwork().getLinks().get(linkId);
-                    Point linkADF = MGC.xy2Point(link.getCoord().getX(), link.getCoord().getY());
-                    for (Geometry lor : lors.values()) {
-                        if (lor.contains(linkADF)) {
-                            if (link.getCapacity() != 0)
-                                linksADF.add(linkId.toString());
-                        }
-                    }
-                }
+                System.out.println("For some reason, the loaded shapes are null! No exampleCounts created!");
+//                Map<Integer,Geometry> lors = getLOR();
+//                for (Id<Link> linkId : scenario.getNetwork().getLinks().keySet()) {
+//                    Link link = scenario.getNetwork().getLinks().get(linkId);
+//                    Point linkADF = MGC.xy2Point(link.getCoord().getX(), link.getCoord().getY());
+//                    for (Geometry lor : lors.values()) {
+//                        if (lor.contains(linkADF)) {
+//                            if (!linkId.toString().contains("pt")) {
+//                                if (link.getCapacity() != 0)
+//                                    linksADF.add(linkId.toString());
+//                            }
+//                        }
+//                    }
+//                }
             }
             countLinks = linksADF.toArray(new String[linksADF.size()]);
         }
@@ -133,36 +153,34 @@ public class RunAnalysis {
         return counts;
     }
 
-    public Map<String, Double> getResidentDensity() throws IOException {
-        Hashtable<String, Geometry> lors = getLOR();
+    public Map<Integer, Double> getResidentDensity() {
+
         double area, counts = 0.;
-        Map<String, Double> density = new HashMap<>();
+        Map<Integer, Double> density = new HashMap<>();
+
         Population population = scenario.getPopulation();
-        for(String lor:lors.keySet()) {
+        for(int zone:shapes.keySet()) {
             for (Person pp : population.getPersons().values()) {
                 Activity homeActivity = PopulationUtils.getFirstActivity(pp.getSelectedPlan());
-                if(density.get(lor) != null) {
-                    counts = density.get(lor);
-                }
-                if(lors.get(lor).contains(MGC.coord2Point(homeActivity.getCoord()))){
-                    density.put(lor,counts+1.);
-                }
+                if(density.get(zone) != null) {counts = density.get(zone);}
+                if(shapes.get(zone).contains(MGC.coord2Point(homeActivity.getCoord()))){density.put(zone,counts+1.);}
             }
-            area = lors.get(lor).getArea();
-            density.put(lor,density.get(lor)/area);
+            area = shapes.get(zone).getArea();
+            density.put(zone,density.get(zone)/area);
         }
+
         return density;
     }
 
 
     public Map<String, Integer> doTrafficCounts() throws IOException {
-        Hashtable<String, Geometry> lors = getLOR();
+        Map<Integer,Geometry> lors = getLOR();
         Map<String, Integer> trafficCounts = new HashMap<>(lors.size());
         Population population = scenario.getPopulation();
         Map<Id<Link>, ? extends Link> links = scenario.getNetwork().getLinks();
 
-        for(String lor:lors.keySet()) {
-            trafficCounts.put(lor, 0);
+        for(Integer lor:lors.keySet()) {
+            trafficCounts.put(String.valueOf(lor), 0);
             System.out.println(String.format("Start analyzing LOR %d of %d", trafficCounts.size(), lors.size()));
             for (Person pp : population.getPersons().values()) {
                 boolean passedZone = false;
@@ -191,7 +209,7 @@ public class RunAnalysis {
                          }
                     }
                     if(passedZone)
-                    trafficCounts.put(lor, trafficCounts.get(lor)+1);
+                    trafficCounts.put(String.valueOf(lor), trafficCounts.get(lor)+1);
                 }
             }
         }
@@ -199,8 +217,8 @@ public class RunAnalysis {
     }
 
 
-    public Hashtable<String,Geometry> getLOR() throws IOException {
-        Hashtable<String,Geometry> allLOR = new Hashtable<>();
+    public Map<Integer,Geometry> getLOR() throws IOException {
+        Map<Integer,Geometry> allLOR = new Hashtable<>();
         FileDataStore store = FileDataStoreFinder.getDataStore(new File(pathLOR));
         FeatureReader<SimpleFeatureType, SimpleFeature> reader = store.getFeatureReader();
         List<SimpleFeature> features = new ArrayList<>();
@@ -211,23 +229,54 @@ public class RunAnalysis {
         }
         reader.close();
 
+
         for(SimpleFeature feature:features) {
-            String lorId = feature.getID();
-            for(String lorADF : areaADF){
-                if(lorId.contains(lorADF)){
-                    Geometry lorGeo = (Geometry) feature.getDefaultGeometry();
-                    allLOR.put(lorId,lorGeo);
+            String[] sLorId = feature.getID().split("\\.");
+            // Make sure that the syntax of PLR IDs is appopriate for the next step
+            int lorId = Integer.parseInt(sLorId[1]);
+            if(areaADF!=null) {
+                for (int lorADF : areaADF) {
+                    if (lorADF == lorId) {
+                        Geometry lorGeo = (Geometry) feature.getDefaultGeometry();
+                        allLOR.put(lorId, lorGeo);
+                        break;
+                    }
                 }
+            }
+            else {
+                Geometry lorGeo = (Geometry) feature.getDefaultGeometry();
+                allLOR.put(lorId, lorGeo);
             }
 
         }
-
         return allLOR;
     }
 
+
+
+//    public Map<Integer,Geometry> getShape() throws IOException {
+//        Map<Integer,Geometry> allLOR = new Hashtable<>();
+//        FileDataStore store = FileDataStoreFinder.getDataStore(new File("C:/Users/djp/Desktop/TUB/MATSim/matsim-2021/git/matsim-funkturm/funkturm_deges_t2/output/deges_t2-gridADF.csv"));
+//        FeatureReader<SimpleFeatureType, SimpleFeature> reader = store.getFeatureReader();
+//        List<SimpleFeature> features = new ArrayList<>();
+//
+//        for( ; reader.hasNext(); ){
+//            SimpleFeature result = reader.next();
+//            features.add(result);
+//        }
+//        reader.close();
+//
+//        for(SimpleFeature feature:features) {
+//            int lorId = Integer.parseInt(feature.getID());
+//            Geometry lorGeo = (Geometry) feature.getDefaultGeometry();
+//            allLOR.put(lorId,lorGeo);   // cast as Polygon, lorId to Integer through split regex [1]
+//        }
+//        return allLOR;
+//    }
+
     public Map<Id<Person>, Person> getADFpersons() throws IOException {
         Population population = scenario.getPopulation();
-        Hashtable<String, Geometry> lors = getLOR();
+        Map<Integer,Geometry> lors = getLOR();
         Map<Double, Double> coordinatesH = new HashMap<>();
         if(lors.size()>9){
             System.out.println("Warning: The covered area of personsADF seems to be bigger than the predefined ADF area");
