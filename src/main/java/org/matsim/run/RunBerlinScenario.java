@@ -21,13 +21,14 @@ package org.matsim.run;
 
 import ch.sbb.matsim.routing.pt.raptor.SwissRailRaptorModule;
 import org.apache.log4j.Logger;
-import org.geotools.feature.SchemaException;
 import org.locationtech.jts.geom.Geometry;
 import org.matsim.analysis.GridCreator;
 import org.matsim.analysis.RunAnalysis;
 import org.matsim.analysis.RunComparison;
 import org.matsim.api.core.v01.Scenario;
 import org.matsim.api.core.v01.TransportMode;
+import org.matsim.api.core.v01.population.Person;
+import org.matsim.api.core.v01.population.Population;
 import org.matsim.core.config.Config;
 import org.matsim.core.config.ConfigUtils;
 import org.matsim.core.config.groups.PlanCalcScoreConfigGroup.ActivityParams;
@@ -42,8 +43,7 @@ import org.matsim.core.scenario.ScenarioUtils;
 import org.matsim.modify.NetworkMod;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Map;
+import java.util.*;
 
 import static org.matsim.core.config.groups.ControlerConfigGroup.RoutingAlgorithmType.FastAStarLandmarks;
 
@@ -57,42 +57,57 @@ public final class RunBerlinScenario {
 	private static final String BASE = "base";
 	private static final String DEGES = "deges";
 	private static final String CITIZEN = "citiz";
-	private static final String INDEX = "_t2";
+	public static final String INDEX = "-berlin_5.4_10pct_300"; // default: [depends on output folder] -berlin_5.4_10pct_300
+	public static final String PRE = "ADF";	// default: funkturm_  ADF
+	public static final String PCT = "1";	// default: 1
+	public static final String ITER = "output_"; // default: output_   100.
+	static String configFile = "/output/berlin-v5.4-"+ RunBerlinScenario.PCT+"pct.output_config.xml";
 
+	// TRUE = Set task, correspondent order as String[] MODE
 	private static final String[] MODE = new String[]{BASE, DEGES, CITIZEN};
 	private static final boolean[] RUNSIM = new boolean[]{false, false, false};
-	private static final boolean[] RUNANALYSIS = new boolean[]{false, false, false};
-	private static final boolean[] RUNCOMPARE = new boolean[]{true, true, false}; // select at least 2 "true" to compare
+	private static final boolean[] RUNANALYSIS = new boolean[]{true, true, true};
+	private static final boolean[] RUNCOMPARE = new boolean[]{true, true, true}; // select at least 2 "true" to compare
 
 	private static final Integer[] areaADF = new Integer[]{115, 120, 122, 123, 130, 136, 138, 139, 140};
 //	private static final Integer[] areaADF = new Integer[]{194, 164, 191, 189, 488, 178, 177, 176};
 //	private static final String[] areaADF = new String[]{"04200311", "04200207", "04400725", "04400726", "04500937", "04300415", "04300414", "04300413"};
+	// get map to save all results from analysis
+	public static Map<String, List<Map<?,?>>> anaResultsMap;
+	public static List<Map<?,?>> anaResultsList;
+
+	// Store config, scneario, population, persons into a static map, to avoid reload the same twice or more times
+	public static Map<String, Config> configs = new HashMap<>();
+	public static Map<String, Scenario> scenarios = new HashMap<>();
+	public static Map<String, Population> populations = new HashMap<>();
+	public static Map<String, Collection<? extends Person>> persons = new HashMap<>();
 
 	private static final Logger log = Logger.getLogger(RunBerlinScenario.class );
 
-	public static void main(String[] args) throws IOException, SchemaException {
+	public static void main(String[] args) throws IOException {
 
-		for(int mode = 0; mode < MODE.length; mode++) {
-			if (RUNSIM[mode]) {
+		/* Run section */
+		for(int mm = 0; mm < MODE.length; mm++) {
+			if (RUNSIM[mm]) {
 				for (String arg : args) {
 					log.info(arg);
 				}
 
 				if (args.length == 0) {
 					// set 1pct or 10 pct
-					args = new String[]{"scenarios/berlin-v5.4-10pct/input/berlin-v5.4-10pct.config.xml"};
+					args = new String[]{"scenarios/berlin-v5.4-"+PCT+"pct/input/berlin-v5.4-"+PCT+"pct.config.xml"};
 				}
 
 				Config config = prepareConfig(args);
 				config.controler().setOverwriteFileSetting(OutputDirectoryHierarchy.OverwriteFileSetting.deleteDirectoryIfExists);
 				// set iterations
 				config.controler().setLastIteration(1);
-				config.controler().setOutputDirectory("./funkturm_" + MODE[mode] + INDEX + "/output");
-//				config.controler().setWriteEventsInterval(20);
+				config.controler().setOutputDirectory("./"+ PRE + MODE[mm] + INDEX + "/output");
+				config.controler().setWriteEventsInterval(50);
 				Scenario scenario = prepareScenario(config);
 
-				if (MODE[mode] != BASE) {
-					new NetworkMod(MODE[mode]).modify(scenario);
+				if (!MODE[mm].equals(BASE)) {
+					new NetworkMod(MODE[mm]).modify(scenario);
 
 //					uncommented to build plans file correctly for export
 //					for (Person pp : scenario.getPopulation().getPersons().values()) {
@@ -102,56 +117,81 @@ public final class RunBerlinScenario {
 //					}
 //					new PopulationWriter(scenario.getPopulation()).write("berlin-v5.4-plans-"+ MODE[mode] +".xml.gz");
 
-
 					System.out.println("CHANGED PLANS!");
-					config.network().setInputFile("berlin-v5.4-network-" + MODE[mode] + ".xml.gz");
-					config.plans().setInputFile("berlin-v5.4-plans-"+ MODE[mode] +".xml.gz");
-//					scenario = prepareScenario(config);
+					config.network().setInputFile("berlin-v5.4-network-" + MODE[mm] + ".xml.gz");
+					config.plans().setInputFile("berlin-v5.4-plans-"+ MODE[mm] +".xml.gz");
+					scenario = prepareScenario(config);
 				}
 
 				Controler controler = prepareControler(scenario);
-//				new TimeAllocationMutatorReRoute().get();
-
-//				controler.run();
+				controler.run();
 			}
 		}
 
-		// prepare polygons (replacing LOR shp, having issues)
+		//workaround to avoid issues creating jar
+		for (String arg : args) {
+			log.info(arg);
+		}
+
+		if (args.length == 0) {
+			// set 1pct or 10 pct
+			args = new String[]{"/output/berlin-v5.4-"+ RunBerlinScenario.PCT+"pct.output_config.xml"};
+		}
+
+		// prepare polygons (replacing LOR shp due to issues)
 		Map<Integer, Geometry> polyADF = new GridCreator().getPolyMap();
 
-		/** Analysis section */
-		for(int mode = 0; mode < MODE.length; mode++) {
-			if (RUNANALYSIS[mode]) {
-				RunAnalysis analysis = new RunAnalysis(MODE[mode] + INDEX, polyADF);
+		/* Analysis section */
+		for(int mm = 0; mm < MODE.length; mm++) {
+			if (RUNANALYSIS[mm]) {
+				System.out.println("\n\n###### Start analysis ["+MODE[mm]+"] ! ######");
+				prepareFiles(mm);
+				anaResultsList = new ArrayList<>();
+//				RunAnalysis analysis = new RunAnalysis(PRE,MODE[mode] + INDEX, polyADF);
+				RunAnalysis analysis = new RunAnalysis(MODE[mm], polyADF);
+
 				analysis.exampleCounts(true);
-				analysis.getResidentDensity(true);
-				analysis.getADFpersons(true);
+				anaResultsList.add(analysis.residentDensity(true));
+				anaResultsList.add(analysis.personsADF(true));
+				anaResultsList.add(analysis.trafficCounts(true));
+				anaResultsList.add(analysis.trafficPerResidentDensity(true));
 				analysis.writeOut(polyADF);
 				analysis.writeToFile(polyADF, "gridADF", "csv");
-				System.out.println("\n\n###### Hallo! ######\n\n");
+
+				anaResultsMap.put(MODE[mm],anaResultsList);
+				System.out.println("\n\n###### End analysis ["+MODE[mm]+"] ! ######");
 			}
 		}
 
-		/** Comparison section */
-		for(int mode = 0; mode < MODE.length-1; mode++) {
-			if (RUNCOMPARE[mode]) {
-				if(RUNCOMPARE[mode+1]) {
-					RunComparison compare = new RunComparison(MODE[mode] + INDEX, MODE[mode+1] + INDEX, polyADF);
-					compare.runAllComparisons();
+		/* Comparison section */
+		for(int mm = 0; mm < MODE.length-1; mm++) {
+			if (RUNCOMPARE[mm]) {
+				if(RUNCOMPARE[mm +1]) {
+					prepareFiles(mm);
+					prepareFiles(mm +1);
+					System.out.println("\n\n###### Compare ["+MODE[mm]+"] to ["+MODE[mm +1]+"] ! ######");
+					RunComparison compare = new RunComparison(MODE[mm],MODE[mm +1],polyADF);
+//					RunComparison compare = new RunComparison(PRE, MODE[mode] + INDEX, MODE[mode+1] + INDEX, polyADF);
+					compare.runAllComparisons(true);
+					compare.runAllComparisons(false);
 				}
-				if(RUNCOMPARE[MODE.length-1-mode]){
-					if(!MODE[MODE.length - 1 - mode].equals(MODE[mode])){
-						RunComparison compare = new RunComparison(MODE[mode] + INDEX, MODE[MODE.length-1-mode] + INDEX, polyADF);
-						compare.runAllComparisons();
+				if(RUNCOMPARE[MODE.length-1- mm]){
+					if(!MODE[MODE.length - 1 - mm].equals(MODE[mm])){
+						prepareFiles(mm);
+						prepareFiles(MODE.length- mm -1);
+						System.out.println("\n\n###### Compare ["+MODE[mm]+"] to ["+MODE[MODE.length- mm -1]+"] ! ######");
+//						RunComparison compare = new RunComparison(PRE,MODE[mode] + INDEX, MODE[MODE.length-1-mode] + INDEX, polyADF);
+						RunComparison compare = new RunComparison(MODE[mm],MODE[MODE.length- mm -1],polyADF);
+						compare.runAllComparisons(true);
+						compare.runAllComparisons(false);
 					}
 					else{
 						break;
 					}
 				}
+
 			}
 		}
-
-
 	}
 
 	public static Controler prepareControler( Scenario scenario ) {
@@ -241,6 +281,42 @@ public final class RunBerlinScenario {
 		ConfigUtils.applyCommandline( config, typedArgs ) ;
 
 		return config ;
+	}
+
+	static void prepareFiles(int mm){
+		String mode = MODE[mm];
+		if(configs.get(mode)==null){
+			Config config = ConfigUtils.loadConfig(PRE+mode+INDEX+configFile);
+			config.network().setInputFile("berlin-v5.4-"+ RunBerlinScenario.PCT+"pct.output_network.xml.gz");
+			config.plans().setInputFile("berlin-v5.4-"+ RunBerlinScenario.PCT+"pct."+RunBerlinScenario.ITER+"plans.xml.gz");
+			configs.put(mode, config);
+			Scenario scenario = ScenarioUtils.loadScenario(config);
+			scenarios.put(mode, scenario);
+			Population population = scenario.getPopulation();
+			populations.put(mode, population);
+			Collection<? extends Person> allPersons = population.getPersons().values();
+			persons.put(mode, allPersons);
+		}
+		else if(scenarios.get(mode)==null){
+			configs.get(mode).network().setInputFile("berlin-v5.4-"+ RunBerlinScenario.PCT+"pct.output_network.xml.gz");
+			configs.get(mode).plans().setInputFile("berlin-v5.4-"+ RunBerlinScenario.PCT+"pct."+RunBerlinScenario.ITER+"plans.xml.gz");
+			Scenario scenario = ScenarioUtils.loadScenario(configs.get(mode));
+			scenarios.put(mode, scenario);
+			Population population = scenario.getPopulation();
+			populations.put(mode, population);
+			Collection<? extends Person> allPersons = population.getPersons().values();
+			persons.put(mode, allPersons);
+		}
+		else if(populations.get(mode)==null){
+			Population population = scenarios.get(mode).getPopulation();
+			populations.put(mode, population);
+			Collection<? extends Person> allPersons = population.getPersons().values();
+			persons.put(mode, allPersons);
+		}
+		else {
+			Collection<? extends Person> allPersons = populations.get(mode).getPersons().values();
+			persons.put(mode, allPersons);
+		}
 	}
 
 }

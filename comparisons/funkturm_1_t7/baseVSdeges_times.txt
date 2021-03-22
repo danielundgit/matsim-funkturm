@@ -1,0 +1,8 @@
+OriginalTime in hours: 12347.316944444445
+ ModifiedTime in hours: 12298.76888888889
+ Time difference in hours: -48.54805555555556
+ Distance difference in kilometers: 
+OriginalMeanTime in hours: 0.15804970296128468
+ ModifiedMeanTime in hours: 0.1574383482537813
+ mean Time difference in hours: -6.113547075033744E-4
+ mean Distance difference in kilometers: 

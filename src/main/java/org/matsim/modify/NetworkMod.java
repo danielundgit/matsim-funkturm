@@ -15,6 +15,7 @@ import org.matsim.core.network.io.NetworkWriter;
 import org.matsim.core.population.PopulationUtils;
 import org.matsim.core.population.io.PopulationReader;
 import org.matsim.core.utils.collections.CollectionUtils;
+import org.matsim.run.RunBerlinScenario;
 
 import java.awt.*;
 import java.io.*;
@@ -24,11 +25,11 @@ import java.util.*;
 
 public class NetworkMod {
 
-    private String outputNetwork = "scenarios/berlin-v5.4-1pct/input/berlin-v5.4-network-degesV2.xml.gz";
-    private String outputPopulation = "scenarios/berlin-v5.4-1pct/input/berlin-v5.4-plans-deges.xml.gz";
+    private String outputNetwork = "scenarios/berlin-v5.4-"+ RunBerlinScenario.PCT+"pct/input/berlin-v5.4-network-degesV2.xml.gz";
+    private String outputPopulation = "scenarios/berlin-v5.4-"+ RunBerlinScenario.PCT+"pct/input/berlin-v5.4-plans-deges.xml.gz";
     private String inputLines = "C:/Users/djp/Documents/deges_lines-v3.csv";
     private String cleaningShape = "C:/Users/djp/Documents/cleaning-shape_2.shp";
-    private String csvOutputPath = System.getProperty("user.dir")+"/scenarios/berlin-v5.4-1pct/output/deges_added-Nodes.csv";
+    private String csvOutputPath = System.getProperty("user.dir")+"/scenarios/berlin-v5.4-"+ RunBerlinScenario.PCT+"pct/output/deges_added-Nodes.csv";
 //    private String outputNetwork;
 //    private String inputLines;
 //    private String cleaningShape;
@@ -39,11 +40,11 @@ public class NetworkMod {
 
     public NetworkMod(String analysisCase){
         this.changeId = analysisCase;
-        this.outputNetwork = "scenarios/berlin-v5.4-1pct/input/berlin-v5.4-network-"+analysisCase+".xml.gz";
+        this.outputNetwork = "scenarios/berlin-v5.4-"+ RunBerlinScenario.PCT+"pct/input/berlin-v5.4-network-"+analysisCase+".xml.gz";
         this.inputLines = "C:/Users/djp/Documents/"+analysisCase+"_lines-v3.csv";
         this.cleaningShape = "C:/Users/djp/Documents/"+analysisCase+"/input/cleaning-shape_2.shp";
-        this.csvOutputPath = System.getProperty("user.dir")+"/scenarios/berlin-v5.4-1pct/modOutput/"+analysisCase+"_added-Nodes.csv";
-        this.outputPopulation = "scenarios/berlin-v5.4-1pct/input/berlin-v5.4-plans-"+analysisCase+".xml.gz";
+        this.csvOutputPath = System.getProperty("user.dir")+"/scenarios/berlin-v5.4-"+ RunBerlinScenario.PCT+"pct/modOutput/"+analysisCase+"_added-Nodes.csv";
+        this.outputPopulation = "scenarios/berlin-v5.4-"+ RunBerlinScenario.PCT+"pct/input/berlin-v5.4-plans-"+analysisCase+".xml.gz";
     }
     public NetworkMod(){
 

@@ -1,0 +1,6 @@
+OriginalScore in [utility]: 827060.9462723387
+ ModifiedScore in [utility]: 827340.871741612
+ Score difference in [utility]: 279.92546927323565
+OriginalMeanScore per person in [utility]: 120.2123468419097
+ ModifiedMeanScore per person in [utility]: 120.25303368337383
+ mean Score difference in [utility]: 0.04068684146412238

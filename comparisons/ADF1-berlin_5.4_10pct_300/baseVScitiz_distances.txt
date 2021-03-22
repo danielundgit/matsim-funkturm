@@ -1,0 +1,6 @@
+OriginalDistance in kilometers: 3954233.36132894
+ ModifiedDistance in kilometers: 4236047.410017226
+ Distance difference in kilometers: 281814.04868828633
+OriginalMeanDistance in kilometers: 4.572663195158096
+ ModifiedMeanDistance in kilometers: 4.5817594906226695
+ mean Distance difference in kilometers: 0.009096295464572903

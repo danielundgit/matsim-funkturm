@@ -1,0 +1,6 @@
+## Time DEGES in hours: 9258.91861111111
+## Time CITIZ in hours: 9215.538333333334
+## Time difference (DEGES-CITIZ) in hours: -43.38027777777778
+##Mean timeDEGES in hours: 0.1536418467569008
+## Mean time CITIZin hours: 0.15289662590767564
+## Mean Time (DEGES-CITIZ) difference in hours: -7.452208492251581E-4

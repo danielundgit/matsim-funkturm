@@ -1,17 +1,16 @@
 package org.matsim.analysis;
 
 import org.matsim.api.core.v01.Scenario;
-import org.matsim.api.core.v01.population.*;
+import org.matsim.api.core.v01.population.Leg;
+import org.matsim.api.core.v01.population.Plan;
+import org.matsim.api.core.v01.population.PlanElement;
 import org.matsim.core.config.Config;
 import org.matsim.core.scenario.ScenarioUtils;
 
-import java.awt.*;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 public class TimeDistanceComparison {
 
@@ -20,6 +19,8 @@ public class TimeDistanceComparison {
     Config compareConfig; Scenario compareScenario;
     String outputPath = "comparisons/";
     String file = "TimeDistanceDifferences.txt";
+    List<Plan> originalPlans = null;
+    List<Plan> modifiedPlans = null;
 
     public TimeDistanceComparison(Config base, Config compare){
         baseConfig = base; compareConfig = compare;
@@ -34,17 +35,15 @@ public class TimeDistanceComparison {
         outputPath = outputPath+fileName;
     }
 
-    public TimeDistanceComparison(Config cBase, Config cCompare, Scenario sBase, Scenario sCompare, String fileName, Map<Integer, Polygon> polyMap){
+    public TimeDistanceComparison(Config cBase, Config cCompare, Scenario sBase, Scenario sCompare, String fileName, List<Plan> pBase, List<Plan> pCompare){
         baseConfig = cBase; compareConfig = cCompare;
         baseScenario = sBase; compareScenario = sCompare;
         outputPath = outputPath+fileName;
+        originalPlans = pBase; modifiedPlans = pCompare;
     }
 
 
     public void prepare() {
-
-        List<Plan> originalPlans = getSelectedPlans(baseScenario);
-        List<Plan> modifiedPlans = getSelectedPlans(compareScenario);
 
         Double[] originalTime = calculateTime(originalPlans);
         Double[] modifiedTime = calculateTime(modifiedPlans);
@@ -74,17 +73,6 @@ public class TimeDistanceComparison {
         } catch(IOException ee){
             throw new RuntimeException(ee);
         }
-    }
-    //Method returns a list of selected plans that are executed
-    private static List<Plan> getSelectedPlans(Scenario scenario){
-        List<Plan> selectedPlans = new ArrayList<>();
-        Population population = scenario.getPopulation();
-
-        for (Person p:population.getPersons().values()){
-            selectedPlans.add(p.getSelectedPlan());
-        }
-
-        return selectedPlans;
     }
 
     //method calculates how much travel time agents aggregate [0] and the mean time per plan [1]

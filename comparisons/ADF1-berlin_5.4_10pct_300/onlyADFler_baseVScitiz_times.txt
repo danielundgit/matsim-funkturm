@@ -1,0 +1,6 @@
+## Time BASE in hours: 9254.308888888889
+## Time CITIZ in hours: 9215.538333333334
+## Time difference (BASE-CITIZ) in hours: -38.77055555555555
+##Mean timeBASE in hours: 0.15499277967590422
+## Mean time CITIZin hours: 0.15289662590767564
+## Mean Time (BASE-CITIZ) difference in hours: -0.0020961537682285957

@@ -1,0 +1,6 @@
+## Time BASE in hours: 136646.23083333333
+## Time DEGES in hours: 147898.4286111111
+## Time difference (BASE-DEGES) in hours: 11252.197777777777
+##Mean timeBASE in hours: 0.1580172775333283
+## Mean time DEGESin hours: 0.15972873755837194
+## Mean Time (BASE-DEGES) difference in hours: 0.001711460025043626
