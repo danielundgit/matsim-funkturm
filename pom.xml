@@ -10,8 +10,8 @@
 	<description>MATSim Open Berlin scenario project</description>
 	
 	<properties>
-	  <!-- <matsim.version>12.0-SNAPSHOT</matsim.version>  -->
-	  <matsim.version>12.0-2019w34-SNAPSHOT</matsim.version>
+	  <matsim.version>13.0-SNAPSHOT</matsim.version>
+	  <!--matsim.version>12.0-2019w34-SNAPSHOT</matsim.version-->
 	</properties>
 
 	<repositories>
@@ -31,7 +31,7 @@
 			<!-- Geotools is not on Maven central -->
 			<id>osgeo</id>
 			<name>Geotools repository</name>
-			<url>http://download.osgeo.org/webdav/geotools</url>
+			<url>https://repo.osgeo.org/repository/release</url>
 		</repository>
 		
 		<repository>
@@ -124,6 +124,13 @@
 	      <!--		<!-\-<scope>test</scope>-\->-->
 	      <!--		<version>0.11.0</version>-->
 	      <!--</dependency>-->
+
+		<dependency>
+			<groupId>org.matsim.contrib</groupId>
+			<artifactId>noise</artifactId>
+			<version>${matsim.version}</version>
+			<scope>compile</scope>
+		</dependency>
 
         </dependencies>
 

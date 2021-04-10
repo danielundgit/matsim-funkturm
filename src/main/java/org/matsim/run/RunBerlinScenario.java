@@ -32,6 +32,7 @@ import org.matsim.api.core.v01.population.Population;
 import org.matsim.core.config.Config;
 import org.matsim.core.config.ConfigUtils;
 import org.matsim.core.config.groups.PlanCalcScoreConfigGroup.ActivityParams;
+import org.matsim.core.config.groups.PlansCalcRouteConfigGroup;
 import org.matsim.core.config.groups.QSimConfigGroup.TrafficDynamics;
 import org.matsim.core.config.groups.VspExperimentalConfigGroup;
 import org.matsim.core.controler.AbstractModule;
@@ -57,9 +58,9 @@ public final class RunBerlinScenario {
 	private static final String BASE = "base";
 	private static final String DEGES = "deges";
 	private static final String CITIZEN = "citiz";
-	public static final String INDEX = "-berlin_5.4_10pct_300"; // default: [depends on output folder] -berlin_5.4_10pct_300
-	public static final String PRE = "ADF";	// default: funkturm_  ADF
-	public static final String PCT = "1";	// default: 1
+	public static final String INDEX = "_t2"; // default: [depends on output folder, e.g. _t7] -berlin_5.4_10pct_300
+	public static final String PRE = "funkturm_";	// default: funkturm_  ADF
+	public static final String PCT = "1";	// default: 1	10
 	public static final String ITER = "output_"; // default: output_   100.
 	static String configFile = "/output/berlin-v5.4-"+ RunBerlinScenario.PCT+"pct.output_config.xml";
 
@@ -69,7 +70,7 @@ public final class RunBerlinScenario {
 	private static final boolean[] RUNANALYSIS = new boolean[]{true, true, true};
 	private static final boolean[] RUNCOMPARE = new boolean[]{true, true, true}; // select at least 2 "true" to compare
 
-	private static final Integer[] areaADF = new Integer[]{115, 120, 122, 123, 130, 136, 138, 139, 140};
+//	private static final Integer[] areaADF = new Integer[]{115, 120, 122, 123, 130, 136, 138, 139, 140};
 //	private static final Integer[] areaADF = new Integer[]{194, 164, 191, 189, 488, 178, 177, 176};
 //	private static final String[] areaADF = new String[]{"04200311", "04200207", "04400725", "04400726", "04500937", "04300415", "04300414", "04300413"};
 	// get map to save all results from analysis
@@ -155,9 +156,11 @@ public final class RunBerlinScenario {
 				anaResultsList.add(analysis.personsADF(true));
 				anaResultsList.add(analysis.trafficCounts(true));
 				anaResultsList.add(analysis.trafficPerResidentDensity(true));
-				analysis.writeOut(polyADF);
+//				analysis.writeOut(polyADF);
 				analysis.writeToFile(polyADF, "gridADF", "csv");
-
+				if(anaResultsMap==null){
+					anaResultsMap = new HashMap<>();
+				}
 				anaResultsMap.put(MODE[mm],anaResultsList);
 				System.out.println("\n\n###### End analysis ["+MODE[mm]+"] ! ######");
 			}
@@ -264,7 +267,7 @@ public final class RunBerlinScenario {
 				
 		// vsp defaults
 		config.vspExperimental().setVspDefaultsCheckingLevel( VspExperimentalConfigGroup.VspDefaultsCheckingLevel.info );
-		config.plansCalcRoute().setInsertingAccessEgressWalk( true );
+		config.plansCalcRoute().setAccessEgressType(PlansCalcRouteConfigGroup.AccessEgressType.accessEgressModeToLink);
 		config.qsim().setUsingTravelTimeCheckInTeleportation( true );
 		config.qsim().setTrafficDynamics( TrafficDynamics.kinematicWaves );
 				

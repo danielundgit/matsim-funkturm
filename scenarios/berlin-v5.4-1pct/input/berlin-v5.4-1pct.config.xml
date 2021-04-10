@@ -119,7 +119,7 @@
 		<param name="fractionOfIterationsToStartScoreMSA" value="1.0" />
 		<parameterset type="scoringParameters" >
 			<parameterset type="modeParams" >
-				<param name="constant" value="-0.45" />
+				<param name="constant" value="-0.0" />
 				<param name="marginalUtilityOfTraveling_util_hr" value="0.0" />
 				<param name="mode" value="car" />
 				<param name="monetaryDistanceRate" value="-0.0002" />
@@ -152,14 +152,13 @@
 				<param name="marginalUtilityOfTraveling_util_hr" value="0.0" />
 				<param name="mode" value="walk" />
 			</parameterset>
-			<parameterset type="modeParams" >
-				<param name="marginalUtilityOfTraveling_util_hr" value="0.0" />
-				<param name="mode" value="transit_walk" />
-			</parameterset>
-			<parameterset type="modeParams" >
-				<param name="marginalUtilityOfTraveling_util_hr" value="0.0" />
-				<param name="mode" value="non_network_walk" />
-			</parameterset>
 		</parameterset>
+	</module>
+
+	<module name="transitRouter">
+		<!-- Factor with which direct walk generalized cost is multiplied before it is compared to the pt generalized cost.  Set to a very high value to reduce direct walk results. -->
+		<param name="directWalkFactor" value="1.0" />
+		<!-- maximum beeline distance between stops that agents could transfer to by walking -->
+		<param name="maxBeelineWalkConnectionDistance" value="300.0" />
 	</module>
 </config>

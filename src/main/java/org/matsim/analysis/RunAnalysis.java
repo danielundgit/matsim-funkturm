@@ -149,12 +149,12 @@ public class RunAnalysis {
             }
         }
         String outputCounts = RunBerlinScenario.PRE+selectDefault+RunBerlinScenario.INDEX+countsFile;
-        System.out.printf("Write %d of %d counts into file %s !%n", counts.getCounts().size(), countLinks.length, outputCounts);
+        System.out.printf("Write %d of %d counts into file %s !\n", counts.getCounts().size(), countLinks.length, outputCounts);
         new CountsWriter(counts).write(outputCounts);
     }
 
     public Map<Integer, Double> residentDensity(boolean writeToFile) {
-
+        System.out.println("Calculate resident density in shapes/zones...");
         double area, counts;
         density = new HashMap<>();
 
@@ -177,7 +177,7 @@ public class RunAnalysis {
             density.put(zone,density.get(zone)/area);
         }
 
-        writeOut(density);
+//        writeOut(density);
         if(writeToFile){
             writeToFile(density, "resident density", "csv");
         }
@@ -185,48 +185,62 @@ public class RunAnalysis {
     }
 
     public Map<Integer, Integer> trafficCounts(boolean writeToFile) {
+        System.out.println("Get traffic counts in shapes/zones...");
         trafficCounts = new HashMap<>(shapes.size());
+        for (Integer zone : shapes.keySet()) { // just to be sure that it will be initialized correctly
+            trafficCounts.put(zone, 0);
+        }
+        List<Integer> matches;
+        int ctr = 0;
 //        if(allPersons==null) {
 //            population = scenario.getPopulation();
 //            allPersons = population.getPersons().values();
 //        }
         Map<Id<Link>, ? extends Link> links = scenario.getNetwork().getLinks();
-        for(Integer zone:shapes.keySet()) {
-            trafficCounts.put(zone, 0);
-            System.out.printf("Start analyzing LOR %d of %d%n", trafficCounts.size(), shapes.size());
-            for (Person pp : allPersons) {
+
+//            trafficCounts.put(zone, 0);
+//        System.out.printf("Start analyzing LOR %d of %d%n", trafficCounts.size(), shapes.size());
+        for (Person pp : allPersons) {
+            for(Leg leg: PopulationUtils.getLegs(pp.getSelectedPlan())){
                 boolean passedZone = false;
-                for(Leg leg: PopulationUtils.getLegs(pp.getSelectedPlan())){
-                    if(leg.getMode().contains("car") || leg.getMode().contains("freight") || leg.getMode().contains("ride")) {
-                        if (leg.getRoute() != null) {
-                            List<String> routeElements = new ArrayList<>();
-                            routeElements.add(leg.getMode());
-                            routeElements.addAll(Arrays.asList(leg.getRoute().getRouteDescription().split(" ").clone()));
-                            //TODO: set Integer[25]{0,0,0,0,...,0,0,0} matches
-                            for(int re = 1; re < routeElements.size(); re++){
-                                Link link = links.get(Id.createLinkId(routeElements.get(re)));
-                                 if(link == null){
-                                     Coord coord_s = links.get(Id.createLinkId(leg.getRoute().getStartLinkId())).getCoord();
-                                     Coord coord_e = links.get(Id.createLinkId(leg.getRoute().getStartLinkId())).getCoord();
-                                     if(shapes.get(zone).contains(MGC.coord2Point(coord_s)) || shapes.get(zone).contains(MGC.coord2Point(coord_e))){
-                                         passedZone = true; //TODO: put matches {0,0,1,0,0,...,0,0,0}
-                                         break;
-                                     }
-                                 }
-                                 else if(shapes.get(zone).contains(MGC.coord2Point(link.getCoord()))){
-                                     passedZone = true;
-                                     break;
-                                 }
-                             }
-                            //TODO: Note: Here we would have matches {0,0,1,0,1,0,0,1,1,0,0,...,1,0,0}
-                         }
+                if(leg.getMode().contains("car") || leg.getMode().contains("freight") || leg.getMode().contains("ride")) {
+                    if (leg.getRoute() != null) {
+                        List<String> routeElements = new ArrayList<>();
+                        routeElements.add(leg.getMode());
+                        routeElements.addAll(Arrays.asList(leg.getRoute().getRouteDescription().split(" ").clone()));
+                        matches = new ArrayList<>(Collections.nCopies(shapes.size()+1,0)); //get 26 fields [0-25], int[0] always 0
+                        //TODO: set Integer[25]{0,0,0,0,...,0,0,0} matches
+                        for(int re = 1; re < routeElements.size(); re++) {
+                            Link link = links.get(Id.createLinkId(routeElements.get(re)));
+                            if (link != null) {
+                                Coord coord_s = links.get(Id.createLinkId(leg.getRoute().getStartLinkId())).getCoord();
+                                Coord coord_e = links.get(Id.createLinkId(leg.getRoute().getEndLinkId())).getCoord();
+                                for (Integer zone : shapes.keySet()) {
+                                    if (shapes.get(zone).contains(MGC.coord2Point(coord_s)) || shapes.get(zone).contains(MGC.coord2Point(coord_e))) {
+                                        passedZone = true; //TODO: put matches {0,0,1,0,0,...,0,0,0}
+                                        matches.set(zone,1);
+                                        break;
+                                    } else if (shapes.get(zone).contains(MGC.coord2Point(link.getCoord()))) {
+                                        passedZone = true;
+                                        matches.set(zone,1);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        if(passedZone) { //TODO: No if condition
+                            for (Integer zone : shapes.keySet()) {
+                                trafficCounts.put(zone, trafficCounts.get(zone) + matches.get(zone));
+                            }
+                        }
+                        //TODO: For all zones: trafficCounts.put(zone, ...get(zone)+matches[zone]); !!
+                        //TODO: Note: Here we would have matches {0,0,1,0,1,0,0,1,1,0,0,...,1,0,0}
                     }
-                    if(passedZone) //TODO: No if condition
-                    trafficCounts.put(zone, trafficCounts.get(zone)+1); //TODO: For all zones: trafficCounts.put(zone, ...get(zone)+matches[zone]); !!
                 }
             }
+            if(++ctr%1111==0) {System.out.printf("%d/%d \"selected\" plans processed!%n", ctr, allPersons.size());}
         }
-        writeOut(trafficCounts);
+//        writeOut(trafficCounts);
         if(writeToFile){
             writeToFile(trafficCounts, "traffic-counts", "csv");
         }
@@ -255,7 +269,7 @@ public class RunAnalysis {
 //    }
 
     public Map<Id<Person>, Person> personsADF(boolean writeToFile) {
-
+        System.out.println("Get persons and their home coordinates in shapes/zones...");
         personsADF = new HashMap<>();
 //        if(allPersons==null) {
 //            population = scenario.getPopulation();
@@ -275,13 +289,13 @@ public class RunAnalysis {
                 }
             }
         }
-        writeOut(coordinatesH);
+//        writeOut(coordinatesH);
         if(writeToFile) { writeToFile(coordinatesH, "coordinatesOfHomesADF", "csv"); }
         return personsADF;
     }
 
     public Map<Integer, Double> trafficPerResidentDensity(boolean writeToFile) throws IOException {
-
+        System.out.println("Calculate (traffic counts * resident density) in shapes/zones...");
         Map<Integer, Integer> trafficCounts = getTrafficCounts();
         Map<Integer, Double> density = getDensity();
         relativeMap = new HashMap<>();
@@ -298,56 +312,44 @@ public class RunAnalysis {
             }
         }
         for(int kk:trafficCounts.keySet()){
-            double relativeValue = Double.parseDouble(trafficCounts.get(kk).toString());
-            relativeMap.put(kk, relativeValue/density.get(kk));
+//            double relativeValue = Double.parseDouble(trafficCounts.get(kk).toString());
+            relativeMap.put(kk, trafficCounts.get(kk)*density.get(kk));
         }
-        writeOut(trafficCounts);
+//        writeOut(relativeMap);
         if(writeToFile){
-            writeToFile(trafficCounts, "traffic-resident-relation", "csv");
+            writeToFile(relativeMap, "traffic-resident-relation", "csv");
         }
         return relativeMap;
     }
 
     public Map<Integer,Double> readIntDouMap(String file) throws IOException {
         Map<Integer,Double> map = new HashMap<>();
-        BufferedReader bufferedReader = null;
-        try {
-            bufferedReader = new BufferedReader(new FileReader(file));
+        try (BufferedReader bufferedReader = new BufferedReader(new FileReader(file))) {
             String line;
             bufferedReader.readLine();
             while ((line = bufferedReader.readLine()) != null) {
-                map.put(Integer.parseInt(line.split(";")[0]),Double.parseDouble(line.split(";")[1]));
+                map.put(Integer.parseInt(line.split(";")[0]), Double.parseDouble(line.split(";")[1]));
             }
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
-        } finally {
-            if (bufferedReader != null) {
-                bufferedReader.close();
-            }
         }
         return map;
     }
 
     public Map<Integer,Integer> readIntIntMap(String file) throws IOException {
         Map<Integer,Integer> map = new HashMap<>();
-        BufferedReader bufferedReader = null;
-        try {
-            bufferedReader = new BufferedReader(new FileReader(file));
+        try (BufferedReader bufferedReader = new BufferedReader(new FileReader(file))) {
             String line;
             bufferedReader.readLine();
             while ((line = bufferedReader.readLine()) != null) {
-                map.put(Integer.parseInt(line.split(";")[0]),Integer.parseInt(line.split(";")[1]));
+                map.put(Integer.parseInt(line.split(";")[0]), Integer.parseInt(line.split(";")[1]));
             }
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
-        } finally {
-            if (bufferedReader != null) {
-                bufferedReader.close();
-            }
         }
         return map;
     }

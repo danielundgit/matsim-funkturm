@@ -95,7 +95,7 @@ public class RunComparison {
         List<Plan> modifiedPlans = getSelectedPlans(compareDefault, onlyADFresidents);
 
         System.out.println("["+baseDefault.toUpperCase()+"]\t"+originalPlans.size()+" relevant legs found!");
-        System.out.println("["+compareDefault.toUpperCase()+"]\t"+originalPlans.size()+" relevant legs found!");
+        System.out.println("["+compareDefault.toUpperCase()+"]\t"+modifiedPlans.size()+" relevant legs found!");
 
         if(originalPlans.size()!=0 && modifiedPlans.size()!= 0) {
             traveltimes(originalPlans, modifiedPlans, pathRoot+ fileRoot + "times.txt");
@@ -271,7 +271,7 @@ public class RunComparison {
             List<PlanElement> planElements = plan.getPlanElements();
             for (PlanElement planElement: planElements) {
                 if(planElement instanceof Leg){
-                    time += (((Leg)planElement).getRoute()).getTravelTime();
+                    time += (((Leg)planElement).getRoute()).getTravelTime().seconds();
                     ctr++;
                 }
             }

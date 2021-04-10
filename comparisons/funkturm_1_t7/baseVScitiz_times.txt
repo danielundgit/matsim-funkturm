@@ -1,8 +1,6 @@
-OriginalTime in hours: 12347.316944444445
- ModifiedTime in hours: 12297.685277777779
- Time difference in hours: -49.63166666666667
- Distance difference in kilometers: 
-OriginalMeanTime in hours: 0.15804970296128468
- ModifiedMeanTime in hours: 0.1572453268604828
- mean Time difference in hours: -8.04376100801897E-4
- mean Distance difference in kilometers: 
+## Time BASE in hours: 12283.386944444444
+## Time CITIZ in hours: 12964.7825
+## Time difference (BASE-CITIZ) in hours: 681.3955555555556
+##Mean timeBASE in hours: 0.15811176686804196
+## Mean time CITIZin hours: 0.1551887972516818
+## Mean Time (BASE-CITIZ) difference in hours: -0.002922969616360168

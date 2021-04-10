@@ -1,8 +1,6 @@
-OriginalTime in hours: 988.9197222222223
- ModifiedTime in hours: 990.7861111111112
- Time difference in hours: 1.8663888888888889
- Distance difference in kilometers: 
-OriginalMeanTime in hours: 0.15603024964061568
- ModifiedMeanTime in hours: 0.15571053137059737
- mean Time difference in hours: -3.1971827001831975E-4
- mean Distance difference in kilometers: 
+## Time DEGES in hours: 979.5988888888888
+## Time CITIZ in hours: 976.6302777777778
+## Time difference (DEGES-CITIZ) in hours: -2.968611111111111
+##Mean timeDEGES in hours: 0.15327787339835533
+## Mean time CITIZin hours: 0.1527655682430436
+## Mean Time (DEGES-CITIZ) difference in hours: -5.123051553117206E-4

@@ -51,10 +51,10 @@ public class TimeDistanceComparison {
         Double[] originalDistance = calculateDistance(originalPlans);
         Double[] modifiedDistance = calculateDistance(modifiedPlans);
 
-        Double timeDifference = modifiedTime[0] - originalTime[0];
-        Double distanceDifference = modifiedDistance[0] - originalDistance[0];
-        Double meanTimeDifference = modifiedTime[1] - originalTime[1];
-        Double meanDistanceDifference = modifiedDistance[1] - originalDistance[1];
+        double timeDifference = modifiedTime[0] - originalTime[0];
+        double distanceDifference = modifiedDistance[0] - originalDistance[0];
+        double meanTimeDifference = modifiedTime[1] - originalTime[1];
+        double meanDistanceDifference = modifiedDistance[1] - originalDistance[1];
 
         System.out.println("OriginalTime: " + originalTime[0]/3600 + "\n ModifiedTime: " + modifiedTime[0]/3600
                 + "\n OriginalDistance: " + originalDistance[0]/1000 + "\n ModifiedDistance: " + modifiedDistance[0]/1000);
@@ -79,14 +79,14 @@ public class TimeDistanceComparison {
     //The method uses as input a list of plans
     private static Double[] calculateTime(List<Plan> Plans) {
         Double[] times = new Double[2];
-        Double time = 0.;
+        double time = 0.;
         double ctr = 0.;
 
         for (Plan plan : Plans){
             List<PlanElement> planElements = plan.getPlanElements();
             for (PlanElement planElement: planElements) {
                 if(planElement instanceof Leg){
-                    time += (((Leg)planElement).getRoute()).getTravelTime();
+                    time += (((Leg)planElement).getRoute()).getTravelTime().seconds();
                     ctr++;
                 }
             }
@@ -99,7 +99,7 @@ public class TimeDistanceComparison {
     //The method uses as input a list of plans
     private static Double[] calculateDistance(List<Plan> Plans) {
         Double[] distances = new Double[2];
-        Double distance = 0.;
+        double distance = 0.;
         double ctr = 0.;
 
         for (Plan plan : Plans){

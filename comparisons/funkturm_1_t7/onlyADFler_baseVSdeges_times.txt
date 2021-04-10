@@ -1,8 +1,6 @@
-OriginalTime in hours: 991.3105555555555
- ModifiedTime in hours: 988.9197222222223
- Time difference in hours: -2.390833333333333
- Distance difference in kilometers: 
-OriginalMeanTime in hours: 0.1562102987008439
- ModifiedMeanTime in hours: 0.15603024964061568
- mean Time difference in hours: -1.800490602282265E-4
- mean Distance difference in kilometers: 
+## Time BASE in hours: 990.3663888888889
+## Time DEGES in hours: 979.5988888888888
+## Time difference (BASE-DEGES) in hours: -10.7675
+##Mean timeBASE in hours: 0.15670354254571028
+## Mean time DEGESin hours: 0.15327787339835533
+## Mean Time (BASE-DEGES) difference in hours: -0.0034256691473549634

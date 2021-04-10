@@ -71,7 +71,7 @@ public class GridCreator {
             }
         }
         System.out.println("### DONE! ###");
-        printGrid(cells);
+//        printGrid(cells);
         polyMap = getPolygons(cells);
 
     }
