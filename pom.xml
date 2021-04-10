@@ -31,7 +31,7 @@
 			<!-- Geotools is not on Maven central -->
 			<id>osgeo</id>
 			<name>Geotools repository</name>
-			<url>http://download.osgeo.org/webdav/geotools</url>
+			<url>https://repo.osgeo.org/repository/release</url>
 		</repository>
 		
 		<repository>
@@ -57,6 +57,13 @@
         		<version>${matsim.version}</version>
         		<scope>compile</scope>
       		</dependency>
+
+		<dependency>
+			<groupId>org.matsim.contrib</groupId>
+			<artifactId>noise</artifactId>
+			<version>${matsim.version}</version>
+			<scope>compile</scope>
+		</dependency>
 
 		<!-- Include the JUnit testing library.  Not transitive. -->
 		<dependency>
