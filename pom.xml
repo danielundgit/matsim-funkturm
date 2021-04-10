@@ -8,10 +8,10 @@
 
 	<name>MATSim Open Berlin scenario project</name>
 	<description>MATSim Open Berlin scenario project</description>
-	
+
 	<properties>
-	  <matsim.version>13.0-SNAPSHOT</matsim.version>
-	  <!--matsim.version>12.0-2019w34-SNAPSHOT</matsim.version-->
+	  <!-- <matsim.version>12.0-SNAPSHOT</matsim.version>  -->
+	  <matsim.version>12.0-2019w34-SNAPSHOT</matsim.version>
 	</properties>
 
 	<repositories>
@@ -31,7 +31,7 @@
 			<!-- Geotools is not on Maven central -->
 			<id>osgeo</id>
 			<name>Geotools repository</name>
-			<url>https://repo.osgeo.org/repository/release</url>
+			<url>http://download.osgeo.org/webdav/geotools</url>
 		</repository>
 		
 		<repository>
@@ -39,7 +39,7 @@
 			<id>ojo-snapshots</id>
 			<url>http://oss.jfrog.org/libs-snapshot</url>
 		</repository>
-		
+
 	</repositories>
 
 	<dependencies>
@@ -50,7 +50,7 @@
 			<artifactId>matsim</artifactId>
 			<version>${matsim.version}</version>
 		</dependency>
-		
+
 		<dependency>
         		<groupId>org.matsim.contrib</groupId>
         		<artifactId>emissions</artifactId>
@@ -74,13 +74,13 @@
 			<version>${matsim.version}</version>
 			<scope>test</scope>
 		</dependency>
-		
+
 		<dependency>
             <!--<groupId>com.github.simunto</groupId>-->
             <!--<artifactId>matsim-sbb-extensions</artifactId>-->
             <!--<version>0.11.0-2018w44</version>-->
-            
-            <!--Include SBB MATSim Extensions local version: -->		
+
+            <!--Include SBB MATSim Extensions local version: -->
 			<!--<groupId>ch.sbb</groupId>-->
 			<!--<artifactId>matsim-sbb-extensions</artifactId>-->
 			<!--<version>11.3-SNAPSHOT</version>-->
@@ -92,13 +92,13 @@
 			<artifactId>matsim-sbb-extensions</artifactId>
 			<version>11.6-vsp-2019-08-26</version>
         </dependency>
-            
+
 		<dependency>
                   <groupId>org.matsim.contrib</groupId>
                   <artifactId>common</artifactId>
                   <version>${matsim.version}</version>
             	</dependency>
-              	
+
 		<dependency>
                     <groupId>org.matsim.contrib</groupId>
                     <artifactId>analysis</artifactId>
@@ -124,13 +124,6 @@
 	      <!--		<!-\-<scope>test</scope>-\->-->
 	      <!--		<version>0.11.0</version>-->
 	      <!--</dependency>-->
-
-		<dependency>
-			<groupId>org.matsim.contrib</groupId>
-			<artifactId>noise</artifactId>
-			<version>${matsim.version}</version>
-			<scope>compile</scope>
-		</dependency>
 
         </dependencies>
 
@@ -276,6 +269,6 @@
 				</dependency>
 			</dependencies>
 		</profile>
-	</profiles> 
-	
+	</profiles>
+
 </project>
