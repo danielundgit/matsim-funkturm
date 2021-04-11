@@ -404,7 +404,7 @@ public class RunAnalysis {
     }
 
     public Map<Integer, Double> getTrafficPerDensity() {
-        if(density==null){
+        if(relativeMap==null){
             System.out.println("trafficPerResidentDensity is null! Run trafficPerResidentDensity() before!");
         }
         return relativeMap;

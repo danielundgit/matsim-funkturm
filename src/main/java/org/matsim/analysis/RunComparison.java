@@ -271,7 +271,7 @@ public class RunComparison {
             List<PlanElement> planElements = plan.getPlanElements();
             for (PlanElement planElement: planElements) {
                 if(planElement instanceof Leg){
-                    time += (((Leg)planElement).getRoute()).getTravelTime();
+                    time += (((Leg)planElement).getRoute()).getTravelTime().seconds();
                     ctr++;
                 }
             }

@@ -23,8 +23,8 @@ import ch.sbb.matsim.routing.pt.raptor.SwissRailRaptorModule;
 import org.apache.log4j.Logger;
 import org.locationtech.jts.geom.Geometry;
 import org.matsim.analysis.GridCreator;
-import org.matsim.analysis.RunAnalysis;
 import org.matsim.analysis.RunComparison;
+import org.matsim.analysis.RunOfflineNoiseAnalysis;
 import org.matsim.api.core.v01.Scenario;
 import org.matsim.api.core.v01.TransportMode;
 import org.matsim.api.core.v01.population.Person;
@@ -41,7 +41,9 @@ import org.matsim.core.controler.OutputDirectoryLogging;
 import org.matsim.core.gbl.Gbl;
 import org.matsim.core.scenario.ScenarioUtils;
 import org.matsim.modify.NetworkMod;
+import org.xml.sax.SAXException;
 
+import javax.xml.xpath.XPathExpressionException;
 import java.io.IOException;
 import java.util.*;
 
@@ -66,8 +68,8 @@ public final class RunBerlinScenario {
 	// TRUE = Set task, correspondent order as String[] MODE
 	private static final String[] MODE = new String[]{BASE, DEGES, CITIZEN};
 	private static final boolean[] RUNSIM = new boolean[]{false, false, false};
-	private static final boolean[] RUNANALYSIS = new boolean[]{true, true, true};
-	private static final boolean[] RUNCOMPARE = new boolean[]{true, true, true}; // select at least 2 "true" to compare
+	private static final boolean[] RUNANALYSIS = new boolean[]{true, false, false};
+	private static final boolean[] RUNCOMPARE = new boolean[]{false, false, false}; // select at least 2 "true" to compare
 
 //	private static final Integer[] areaADF = new Integer[]{115, 120, 122, 123, 130, 136, 138, 139, 140};
 //	private static final Integer[] areaADF = new Integer[]{194, 164, 191, 189, 488, 178, 177, 176};
@@ -84,7 +86,7 @@ public final class RunBerlinScenario {
 
 	private static final Logger log = Logger.getLogger(RunBerlinScenario.class );
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws IOException, XPathExpressionException, SAXException {
 
 		/* Run section */
 		for(int mm = 0; mm < MODE.length; mm++) {
@@ -139,28 +141,32 @@ public final class RunBerlinScenario {
 		}
 
 		// prepare polygons (replacing LOR shp due to issues)
-		Map<Integer, Geometry> polyADF = new GridCreator().getPolyMap();
+		GridCreator adf = new GridCreator();
+		Map<Integer, Geometry> polyADF = adf.getPolyMap();
 
 		/* Analysis section */
 		for(int mm = 0; mm < MODE.length; mm++) {
 			if (RUNANALYSIS[mm]) {
 				System.out.println("\n\n###### Start analysis ["+MODE[mm]+"] ! ######");
 				prepareFiles(mm);
-				anaResultsList = new ArrayList<>();
-//				RunAnalysis analysis = new RunAnalysis(PRE,MODE[mode] + INDEX, polyADF);
-				RunAnalysis analysis = new RunAnalysis(MODE[mm], polyADF);
+//				anaResultsList = new ArrayList<>();
+////				RunAnalysis analysis = new RunAnalysis(PRE,MODE[mode] + INDEX, polyADF);
+//				RunAnalysis analysis = new RunAnalysis(MODE[mm], polyADF);
 
-				analysis.exampleCounts(true);
-				anaResultsList.add(analysis.residentDensity(true));
-				anaResultsList.add(analysis.personsADF(true));
-				anaResultsList.add(analysis.trafficCounts(true));
-				anaResultsList.add(analysis.trafficPerResidentDensity(true));
-//				analysis.writeOut(polyADF);
-				analysis.writeToFile(polyADF, "gridADF", "csv");
+//				analysis.exampleCounts(true);
+//				anaResultsList.add(analysis.residentDensity(true));
+//				anaResultsList.add(analysis.personsADF(true));
+//				anaResultsList.add(analysis.trafficCounts(true));
+//				anaResultsList.add(analysis.trafficPerResidentDensity(true));
+				// noise calculation
+				new RunOfflineNoiseAnalysis(MODE[mm],adf).calculate();
+
+//				//analysis.writeOut(polyADF);
+//				analysis.writeToFile(polyADF, "gridADF", "csv");
 				if(anaResultsMap==null){
 					anaResultsMap = new HashMap<>();
 				}
-				anaResultsMap.put(MODE[mm],anaResultsList);
+//				anaResultsMap.put(MODE[mm],anaResultsList);
 				System.out.println("\n\n###### End analysis ["+MODE[mm]+"] ! ######");
 			}
 		}
