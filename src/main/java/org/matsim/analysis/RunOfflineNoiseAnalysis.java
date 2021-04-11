@@ -26,7 +26,6 @@ import org.matsim.contrib.noise.ProcessNoiseImmissions;
 import org.matsim.core.config.Config;
 import org.matsim.core.config.ConfigUtils;
 import org.matsim.core.scenario.ScenarioUtils;
-import org.matsim.run.RunBerlinScenario;
 import org.xml.sax.SAXException;
 
 import javax.xml.xpath.XPathExpressionException;
@@ -73,20 +72,20 @@ public class RunOfflineNoiseAnalysis {
 //		networkWriter.write(lookupDir+"/networkTestCRS.xml");
 
 //		Config config = ConfigUtils.createConfig(new NoiseConfigGroup());
-		Config config = ConfigUtils.createConfig();
+		Config config = ConfigUtils.loadConfig(configs.get(selectDefault).getContext());
 		Config config2 = configs.get(selectDefault);
-		config.global().setCoordinateSystem("EPSG:31468");
+//		config.global().setCoordinateSystem("EPSG:31468");
 
 ////		config.network().setInputFile(runDirectory + runId + ".output_network.xml.gz");
 //		config.network().setInputFile("https://svn.vsp.tu-berlin.de/repos/public-svn/matsim/scenarios/countries/de/berlin/berlin-v5.5-10pct/input/berlin-v5.5-network.xml.gz");
-		config.network().setInputFile(lookupDir+"/berlin-v5.4-"+ RunBerlinScenario.PCT+"pct.output_network.xml.gz");
+//		config.network().setInputFile(lookupDir+"/berlin-v5.4-"+ RunBerlinScenario.PCT+"pct.output_network.xml.gz");
 //		config.network().setInputFile(lookupDir+"networkTestCRS.xml");
-		config.network().setInputCRS("EPSG:31468");
+//		config.network().setInputCRS("EPSG:31468");
 ////		config.plans().setInputFile(runDirectory + runId + ".output_plans.xml.gz");
 //		config.plans().setInputFile("https://svn.vsp.tu-berlin.de/repos/public-svn/matsim/scenarios/countries/de/berlin/berlin-v5.5-1pct/input/berlin-v5.5-1pct.plans.xml.gz");
 
-		config.plans().setInputFile(lookupDir+"berlin-v5.4-"+ RunBerlinScenario.PCT+"pct."+RunBerlinScenario.ITER+"plans.xml.gz");
-		config.plans().setInputCRS("EPSG:31468");
+//		config.plans().setInputFile(lookupDir+"berlin-v5.4-"+ RunBerlinScenario.PCT+"pct."+RunBerlinScenario.ITER+"plans.xml.gz");
+//		config.plans().setInputCRS("EPSG:31468");
 //		config.controler().setOutputDirectory(runDirectory);
 		config.controler().setOutputDirectory("./"+ lookupDir);
 //		config.controler().setRunId(runId+"_"+selectDefault);
@@ -95,7 +94,7 @@ public class RunOfflineNoiseAnalysis {
 
 //		config.addModule(new NoiseConfigGroup());
 
-		config.global().setCoordinateSystem("EPSG:31468");
+//		config.global().setCoordinateSystem("EPSG:31468");
 /*
 		NoiseConfigGroup noiseParameters = (NoiseConfigGroup) config.getModules().get(NoiseConfigGroup.GROUP_NAME);
 		noiseParameters.setReceiverPointGap(receiverPointGap);
@@ -197,7 +196,7 @@ public class RunOfflineNoiseAnalysis {
 		try {
 			noiseCalculation.run();
 		} catch (NullPointerException e) {
-			System.out.println(e+"\n######\n"+Arrays.toString(e.getStackTrace()));
+			log.warn(e+"\n######\n"+Arrays.toString(e.getStackTrace()));
 		}
 
 		
@@ -208,7 +207,7 @@ public class RunOfflineNoiseAnalysis {
 		try {
 			process.run();
 		} catch (NullPointerException e) {
-			System.out.println(e+"\n######\n"+Arrays.toString(e.getStackTrace()));
+			log.warn(e+"\n######\n"+Arrays.toString(e.getStackTrace()));
 		}
 				
 		final String[] labels = { "damages_receiverPoint" };
