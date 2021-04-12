@@ -63,7 +63,7 @@ public final class RunBerlinScenario {
 	public static final String PRE = "funkturm_";	// default: funkturm_  ADF
 	public static final String PCT = "1";	// default: 1	10
 	public static final String ITER = "output_"; // default: output_   100.
-	static String configFile = "/output/berlin-v5.4-"+ RunBerlinScenario.PCT+"pct.output_config.xml";
+	static String configFile = "/output/berlin-v5.4-"+ RunBerlinScenario.PCT+"pct.output_config_2.xml";
 
 	// TRUE = Set task, correspondent order as String[] MODE
 	private static final String[] MODE = new String[]{BASE, DEGES, CITIZEN};
@@ -295,10 +295,13 @@ public final class RunBerlinScenario {
 		String mode = MODE[mm];
 		if(configs.get(mode)==null){
 			Config config = ConfigUtils.loadConfig(PRE+mode+INDEX+configFile);
-			config.network().setInputFile("berlin-v5.4-"+ RunBerlinScenario.PCT+"pct.output_network.xml.gz");
-			config.plans().setInputFile("berlin-v5.4-"+ RunBerlinScenario.PCT+"pct."+RunBerlinScenario.ITER+"plans.xml.gz");
+			config.network().setInputFile("berlin-v5.4-"+ RunBerlinScenario.PCT+"pct.output_network.xml");
+			config.plans().setInputFile("berlin-v5.4-"+ RunBerlinScenario.PCT+"pct."+RunBerlinScenario.ITER+"plans.xml");
 			configs.put(mode, config);
 			Scenario scenario = ScenarioUtils.loadScenario(config);
+			scenario.getNetwork().getAttributes().putAttribute("coordinateReferenceSystem", "EPSG:31468");
+			scenario.getPopulation().getAttributes().putAttribute("coordinateReferenceSystem", "EPSG:31468");
+			scenario.getTransitSchedule().getAttributes().putAttribute("coordinateReferenceSystem", "EPSG:31468");
 			scenarios.put(mode, scenario);
 			Population population = scenario.getPopulation();
 			populations.put(mode, population);
@@ -306,8 +309,8 @@ public final class RunBerlinScenario {
 			persons.put(mode, allPersons);
 		}
 		else if(scenarios.get(mode)==null){
-			configs.get(mode).network().setInputFile("berlin-v5.4-"+ RunBerlinScenario.PCT+"pct.output_network.xml.gz");
-			configs.get(mode).plans().setInputFile("berlin-v5.4-"+ RunBerlinScenario.PCT+"pct."+RunBerlinScenario.ITER+"plans.xml.gz");
+			configs.get(mode).network().setInputFile("berlin-v5.4-"+ RunBerlinScenario.PCT+"pct.output_network.xml");
+			configs.get(mode).plans().setInputFile("berlin-v5.4-"+ RunBerlinScenario.PCT+"pct."+RunBerlinScenario.ITER+"plans.xml");
 			Scenario scenario = ScenarioUtils.loadScenario(configs.get(mode));
 			scenarios.put(mode, scenario);
 			Population population = scenario.getPopulation();
